@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Response } from 'express';
 
-@Controller()
+@Controller('api')
 export class AppController {
   constructor(private readonly appService: AppService) { }
 

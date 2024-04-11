@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { SiteService } from './site.service';
 
-@Controller('Sites')
+@Controller('api/Sites')
 export class SiteController {
     constructor(private readonly SiteService: SiteService) { }
 

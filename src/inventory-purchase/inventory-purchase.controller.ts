@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { InventoryPurchaseService } from './inventory-purchase.service';
 import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest } from './inventory-purchase.entity';
 
-@Controller('inventory-purchase')
+@Controller('api/inventory-purchase')
 export class InventoryPurchaseController {
 
     constructor(private readonly inventoryPurcahseService: InventoryPurchaseService) { }

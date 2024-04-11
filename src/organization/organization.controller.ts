@@ -4,7 +4,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { Vendor } from './organization.entity';
 
-@Controller('organizations')
+@Controller('api/organizations')
 export class OrganizationController {
     constructor(private readonly organizationService: OrganizationService) { }
 

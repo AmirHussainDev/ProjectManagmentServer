@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { RolePermissionsService } from './role-permissions.service';
 
-@Controller('role-permissions')
+@Controller('api/role-permissions')
 export class RolePermissionController {
     constructor(private readonly RolePermissionService: RolePermissionsService) { }
 
