@@ -59,7 +59,6 @@ export class OrganizationService {
             filePath = path.join(uploadDir, fileName);
             fs.writeFileSync(filePath, file.buffer);
         }
-        console.log(filePath);
         const vendor = this.VendorRepository.create({ organization_id, name, filename: fileName });
         return this.VendorRepository.save(vendor);
     }

@@ -17,7 +17,6 @@ export class RolePermissionsService {
     }
     async updateRole(userObj: any): Promise<RolePermissions> {
         // Update the user
-        console.log(userObj)
         await this.RolePermissionsRepository.update({ id: userObj.id }, { role_name: userObj.role_name, role_permissions: userObj.role_permissions });
 
         // Find and return the updated user

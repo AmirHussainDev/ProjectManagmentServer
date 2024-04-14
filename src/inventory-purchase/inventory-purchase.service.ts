@@ -22,7 +22,6 @@ export class InventoryPurchaseService {
     const purchase = this.PurchaseRequestRepository.create(itemDetails.details);
     const resp = await this.PurchaseRequestRepository.save(purchase);
     itemDetails.products = itemDetails.products.map(item => ({ ...item, purchase_id: resp.id }))
-    console.log(resp, itemDetails.products)
     const purchaseItems = this.PurchaseItemsRepository.save(itemDetails.products);
     return resp;
   }
@@ -40,7 +39,6 @@ export class InventoryPurchaseService {
     if (itemDetails.details.state == 4) {
       const po = await this.PurchaseRequestRepository.findOneBy({ id: itemDetails.details.id });
       const products = await this.PurchaseItemsRepository.findBy({ purchase_id: po.id })
-      console.log(po, products)
       for (const product of products) {
         if (!product.isCustom) {
           const inventory = {
@@ -57,7 +55,6 @@ export class InventoryPurchaseService {
             date_created: new Date()
           }
           const inventoryItem = this.inventoryItemRepository.create(inventory);
-          console.log(inventoryItem)
           await this.inventoryItemRepository.save(inventoryItem);
         }
       }
@@ -70,7 +67,6 @@ export class InventoryPurchaseService {
     const sale = this.SaleRequestRepository.create(itemDetails.details);
     const resp = await this.SaleRequestRepository.save(sale);
     itemDetails.products = itemDetails.products.map(item => ({ ...item, sale_id: resp.id }))
-    console.log(resp, itemDetails.products)
     const saleItems = this.SaleItemsRepository.save(itemDetails.products);
     return resp;
   }
@@ -86,9 +82,7 @@ export class InventoryPurchaseService {
     }
     if (itemDetails.details.state == 4) {
       const so = await this.SaleRequestRepository.findOneBy({ id: itemDetails.details.id });
-      console.log(so)
       const products = await this.SaleItemsRepository.findByIds(itemDetails.products.map(pr => pr.id))
-      console.log(so)
       for (const product of products) {
         const inventory = {
           organization_id: so.organization_id,
@@ -104,7 +98,6 @@ export class InventoryPurchaseService {
           date_created: new Date()
         }
         const inventoryItem = this.inventoryItemRepository.create(inventory);
-        console.log(inventoryItem)
         await this.inventoryItemRepository.save(inventoryItem);
       }
     }

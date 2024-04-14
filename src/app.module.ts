@@ -45,7 +45,7 @@ import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest }
       synchronize: true,
     }),
     JwtModule.register({
-      secret: 'your-secret-key',
+      secret: 'Veins-Login-Secret',
       signOptions: { expiresIn: '1h' },
     }),
     UserModule,
