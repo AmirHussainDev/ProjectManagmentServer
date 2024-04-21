@@ -1,4 +1,5 @@
 import { Organization, SubOrganization, Vendor } from 'src/organization/organization.entity';
+import { Site } from 'src/site/site.entity';
 import { User } from 'src/user/user.entity';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 
@@ -10,6 +11,12 @@ export class PurchaseRequest {
     @Column()
     @ManyToOne(() => Organization)
     organization_id: number;
+
+    @Column({ nullable: true })
+    isSiteBased: boolean;
+
+    @Column({ nullable: true })
+    site_ids: string;
 
     @Column()
     @ManyToOne(() => SubOrganization)
@@ -229,7 +236,6 @@ export class SaleItems {
 
     @Column({ nullable: true, type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date_created: Date;
-
     
     @Column({ nullable: true })
     isCustom: boolean;
@@ -248,6 +254,12 @@ export class InventoryItem {
     @Column()
     @ManyToOne(() => SubOrganization)
     sub_organization_id: number;
+
+    @Column({ nullable: true })
+    isSiteBased: boolean;
+
+    @Column({ nullable: true })
+    site_ids: string;
 
     @Column({ nullable: true })
     @ManyToOne(() => PurchaseRequest)

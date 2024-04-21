@@ -48,6 +48,8 @@ export class InventoryPurchaseService {
             stock_in: true,
             name: product.name,
             vendor_id: po.vendor_id,
+            isSiteBased: po.isSiteBased,
+            site_ids: po.site_ids,
             qty: product.qty,
             unit_price: product.unit_price,
             description: po.subject,

@@ -13,7 +13,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { SiteController } from './site/site.controller';
 import { SiteModule } from './site/site.module';
 import { SiteService } from './site/site.service';
-import { Site } from './site/site.entity';
+import { SiteContracts, Site } from './site/site.entity';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 import { RolePermissions } from './role-permissions/role-permissions.entity';
 import { InventoryPurchaseModule } from './inventory-purchase/inventory-purchase.module';
@@ -40,7 +40,8 @@ import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest }
         PurchaseItems,
         SaleRequest,
         SaleItems,
-        InventoryItem
+        InventoryItem,
+        SiteContracts
       ],
       synchronize: true,
     }),
