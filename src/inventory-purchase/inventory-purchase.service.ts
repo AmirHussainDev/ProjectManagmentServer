@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest } from './inventory-purchase.entity';
-import { Repository, getConnection, getManager } from 'typeorm';
+import { ILike, Raw, Repository, getConnection, getManager } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -179,5 +179,12 @@ export class InventoryPurchaseService {
     : this.inventoryItemRepository.findBy({ organization_id, sub_organization_id });
 
   }
+
+  async getInventoryBySite(organization_id: number, sub_organization_id: number, siteId: number): Promise<InventoryItem[]> {
+    return this.inventoryItemRepository.findBy({ organization_id, sub_organization_id, site_ids: Raw(alias => `CAST(${alias} AS text) ILIKE '%${siteId}%'`),  }) 
+   
+
+  }
+  
 
 }

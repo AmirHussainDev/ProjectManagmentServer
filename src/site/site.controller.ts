@@ -22,14 +22,14 @@ export class SiteController {
 
     @UseGuards(AuthGuard('jwt'))
     @Get(':orgId/:subOrg')
-    getAllOrganizationSites(@Param('orgId') orgId: string,@Param('subOrg') subOrg: string) {
-        return this.SiteService.findByOrganizationId(parseInt(orgId),parseInt(subOrg));
+    getAllOrganizationSites(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string) {
+        return this.SiteService.findByOrganizationId(parseInt(orgId), parseInt(subOrg));
     }
 
     @UseGuards(AuthGuard('jwt'))
     @Get(':orgId/:subOrg/:siteId')
-    getSiteById(@Param('orgId') orgId: string,@Param('subOrg') subOrg: string,@Param('siteId') siteId: string) {
-        return this.SiteService.findBySiteId(parseInt(orgId),parseInt(subOrg),parseInt(siteId));
+    getSiteById(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string) {
+        return this.SiteService.findBySiteId(parseInt(orgId), parseInt(subOrg), parseInt(siteId));
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -39,27 +39,26 @@ export class SiteController {
     }
 
     @UseGuards(AuthGuard('jwt'))
-    @Post()
+    @Post('contractors')
     createSiteContracts(@Body() requestDetails: SiteContracts) {
         return this.SiteService.createSiteContracts(requestDetails);
     }
 
     @UseGuards(AuthGuard('jwt'))
-    @Put('/contract')
+    @Put('contract')
     updateSiteContracts(@Body() requestDetails: SiteContracts) {
         return this.SiteService.updateSiteContracts(requestDetails);
     }
 
+    @UseGuards(AuthGuard('jwt'))
+    @Get('contracts/:orgId/:subOrg/:siteId')
+    get_contracts_request(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string,@Param('siteId') siteId: string) {
+        return this.SiteService.getAllContracts(parseInt(orgId), parseInt(subOrg), parseInt(siteId));
+    }
 
     @UseGuards(AuthGuard('jwt'))
-    @Get('/contract/:orgId/:subOrg')
-    get_contracts_request(@Param('orgId') orgId: string,@Param('subOrg') subOrg: string) {
-        return this.SiteService.getAllContracts(parseInt(orgId),parseInt(subOrg));
+    @Get('contract/:organizationId/:siteId/:contractId')
+    get_contract_request(@Param('organizationId') orgId: string, @Param('siteId') siteId: string,@Param('contractId') subOrg: string) {
+        return this.SiteService.getContract(parseInt(orgId),parseInt(siteId),parseInt(subOrg));
     }
-
-    @UseGuards(AuthGuard('jwt'))
-    @Get('/contract/:organizationId/:contractId')
-    get_contract_request(@Param('organizationId') orgId: string,@Param('contractId') subOrg: string) {
-        return this.SiteService.getContract(parseInt(subOrg));
-    }
-    }
+}

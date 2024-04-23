@@ -74,6 +74,11 @@ export class InventoryPurchaseController {
     async getInventoryItem(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string): Promise<InventoryItem[]> {
         return this.inventoryPurcahseService.getInventory(parseInt(orgId), parseInt(subOrgId));
     }
+    @UseGuards(AuthGuard('jwt'))
+    @Get('inventory/:orgId/:subOrgId/:siteId')
+    async getInventoryBySiteItemDetails(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string,@Param('siteId') siteId: string, @Query('name') name:string): Promise<InventoryItem[]> {  
+        return this.inventoryPurcahseService.getInventoryBySite(parseInt(orgId), parseInt(subOrgId),parseInt(siteId));
+    }
 
     @UseGuards(AuthGuard('jwt'))
     @Get('inventory-item-details/:orgId/:subOrgId')

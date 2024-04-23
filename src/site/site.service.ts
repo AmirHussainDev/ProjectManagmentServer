@@ -56,11 +56,12 @@ export class SiteService {
         return true;
     }
 
-    async getContract(id: number) {
+    async getContract(organizationId: number, siteId: number, id: number) {
         try {
-            const SiteContracts = await this.SiteContractsRepository.findOneBy({
-                id
-            });
+            const SiteContracts = await this.SiteContractsRepository.createQueryBuilder('cd')
+                .where('cd.organization_id = :organizationId', { organizationId })
+                .andWhere('cd.site_id = :siteId', { siteId })
+                .andWhere('cd.id = :id', { id }).getOne()
             return SiteContracts;
         } catch (error) {
             console.error('Error fetching contract details:', error);
@@ -68,7 +69,7 @@ export class SiteService {
         }
     }
 
-    async getAllContracts(organizationId: number, subOrganizationId: number) {
+    async getAllContracts(organizationId: number, subOrganizationId: number, siteId: number) {
         try {
             const SiteContracts = await this.SiteContractsRepository
                 .createQueryBuilder('cd')
@@ -77,6 +78,7 @@ export class SiteService {
                 .innerJoinAndSelect('cd.site', 'site')
                 .where('cd.organization_id = :organizationId', { organizationId })
                 .andWhere('cd.sub_organization_id = :subOrganizationId', { subOrganizationId })
+                .andWhere('cd.site_id = :siteId', { siteId })
                 .getMany();
             return SiteContracts;
         } catch (error) {
