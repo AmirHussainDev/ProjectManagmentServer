@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SiteContracts, Site } from './site.entity';
+import { SiteContracts, Site, SiteExpenses, SiteOwnerPayments, SiteContractPayments, SiteContractorWorkLog, SiteContractorPayments } from './site.entity';
 
 @Injectable()
 export class SiteService {
@@ -12,6 +12,23 @@ export class SiteService {
 
         @InjectRepository(SiteContracts)
         private readonly SiteContractsRepository: Repository<SiteContracts>,
+
+        @InjectRepository(SiteExpenses)
+        private readonly siteExpensesRepository: Repository<SiteExpenses>,
+
+        @InjectRepository(SiteOwnerPayments)
+        private readonly siteOwnerPaymentsRepository: Repository<SiteOwnerPayments>,
+
+        @InjectRepository(SiteContractPayments)
+        private readonly siteContractPaymentsRepository: Repository<SiteContractPayments>,
+        
+        @InjectRepository(SiteContractorWorkLog)
+        private readonly siteContractorWorkLogRepository: Repository<SiteContractorWorkLog>,
+
+        @InjectRepository(SiteContractorPayments)
+        private readonly siteContractorPaymentsRepository: Repository<SiteContractorPayments>,
+
+
 
     ) { }
 
@@ -85,6 +102,100 @@ export class SiteService {
             console.error('Error fetching contract details:', error);
             throw error;
         }
+    }
+
+    async createSiteExpenses(details: SiteExpenses) {
+        const expense = this.siteExpensesRepository.create(details);
+        const resp = await this.siteExpensesRepository.save(expense);
+        return resp;
+    }
+
+    async updateSiteExpenses(details: SiteContracts) {
+        await this.siteExpensesRepository.update(details.id, details);
+        return true;
+    }
+
+
+    async getSiteExpenses(organization_id: number, sub_organization_id: number, site_id: number) {
+        const siteExpenses = await this.siteExpensesRepository.find({
+            where: { site: { id: site_id }, organization: { id: organization_id }, subOrganization: { id: sub_organization_id } },
+            relations: ['created_by', 'organization', 'subOrganization', 'site'],
+            order: { id: 'ASC' }// Include relations if needed
+        });
+        return siteExpenses;
+    }
+
+    async createSiteOwnerPayment(details: SiteOwnerPayments) {
+        const OwnerPayment = this.siteOwnerPaymentsRepository.create(details);
+        const resp = await this.siteOwnerPaymentsRepository.save(OwnerPayment);
+        return resp;
+    }
+
+    async updateSiteOwnerPayments(details: SiteOwnerPayments) {
+        await this.siteOwnerPaymentsRepository.update(details.id, details);
+        return true;
+    }
+
+
+    async getSiteOwnerPayments(organization_id: number, sub_organization_id: number, site_id: number) {
+        const siteOwnerPayments = await this.siteOwnerPaymentsRepository.find({
+            where: { site: { id: site_id }, organization: { id: organization_id }, subOrganization: { id: sub_organization_id } },
+            relations: ['created_by', 'organization', 'subOrganization', 'site'],
+            order: { id: 'ASC' }// Include relations if needed
+        });
+        return siteOwnerPayments;
+    }
+
+    async getSiteContractorsPayments(organizationId: number, subOrganizationId: number, siteId: number) {
+       console.log('here')
+        const siteContracts = await this.SiteContractsRepository
+        .createQueryBuilder('sc')
+        .select('sc.id', 'id')
+        .addSelect('sc.subject', 'subject')
+        .addSelect('sc.contractor', 'contractor')
+        .addSelect('SUM(CAST(scp.amount AS INTEGER))', 'amount')
+        .leftJoin('site_contractor_payments', 'scp', 'sc.id = scp.contract_id')
+        .where('sc.organization_id = :organizationId', { organizationId })
+        .andWhere('sc.sub_organization_id = :subOrganizationId', { subOrganizationId })
+        .andWhere('sc.site_id = :siteId', { siteId })
+        .groupBy('sc.id')
+        .addGroupBy('sc.subject')
+        .addGroupBy('sc.contractor')
+        .getRawMany();
+
+        return siteContracts;
+    }
+
+    async createSiteWorkLog(details: SiteContractorWorkLog) {
+        const worklog = this.siteContractorWorkLogRepository.create(details);
+        const resp = await this.siteContractorWorkLogRepository.save(worklog);
+        return resp;
+    }
+
+
+    async getSiteWorkLogs(organization_id: number, sub_organization_id: number, site_id: number,contract_id: number) {
+        const siteOwnerPayments = await this.siteContractorWorkLogRepository.find({
+            where: { site: { id: site_id }, organization: { id: organization_id }, subOrganization: { id: sub_organization_id },contract:{id:contract_id} },
+            relations: ['created_by', 'organization', 'subOrganization', 'site','contract'],
+            order: { id: 'ASC' }// Include relations if needed
+        });
+        return siteOwnerPayments;
+    }
+
+    async createSiteContractPayment(details: SiteContractorPayments) {
+        const worklog = this.siteContractorPaymentsRepository.create(details);
+        const resp = await this.siteContractorPaymentsRepository.save(worklog);
+        return resp;
+    }
+
+
+    async getSiteContractPayments(organization_id: number, sub_organization_id: number, site_id: number,contract_id: number) {
+        const siteOwnerPayments = await this.siteContractorPaymentsRepository.find({
+            where: { site: { id: site_id }, organization: { id: organization_id }, subOrganization: { id: sub_organization_id },contract:{id:contract_id} },
+            relations: ['created_by', 'organization', 'subOrganization', 'site','contract'],
+            order: { id: 'ASC' }// Include relations if needed
+        });
+        return siteOwnerPayments;
     }
 }
 

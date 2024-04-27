@@ -55,19 +55,29 @@ export class SiteExpenses {
     name: string;
     
     @Column()
-    amount: string;
+    is_general: boolean;
+
+    @Column({nullable:true})
+    purchase_id: number;
 
     @Column()
-    verified: boolean;
+    is_paid: boolean;
+        
+ 
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
+    amount: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
+    unit_price: number;
 
     @Column()
-    isPaid: boolean;
+    quantity: number;
     
-    @Column()
-    contact_no: string;
-    
-    @Column()
+    @Column({nullable:true})
     note: string;
+
+    @Column({nullable:true})
+    refered_by: number;
 
     @ManyToOne(type => User)
     @JoinColumn({ name: 'created_by_id' })
@@ -103,7 +113,7 @@ export class SiteOwnerPayments {
     amount: string;
 
     @Column()
-    isPaid: boolean;
+    is_paid: boolean;
         
     @Column()
     note: string;
@@ -127,7 +137,6 @@ export class SiteOwnerPayments {
     @ManyToOne(type => Site)
     @JoinColumn({ name: 'site_id' })
     site: Site;
-
 }
 
 
@@ -136,8 +145,6 @@ export class SiteOwnerPayments {
 export class SiteContracts {
     @PrimaryGeneratedColumn()
     id: number;
-
-
 
     @ManyToOne(type => Organization)
     @JoinColumn({ name: 'organization_id' })
@@ -196,4 +203,127 @@ export class SiteContracts {
 
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
     amount_per_day: number;
+}
+
+@Entity()
+export class SiteContractPayments {
+    @PrimaryGeneratedColumn()
+    id: number;
+    
+    @Column()
+    amount: string;
+
+    @Column()
+    is_paid: boolean;
+        
+    @Column()
+    note: string;
+
+    @ManyToOne(type => User)
+    @JoinColumn({ name: 'created_by_id' })
+    created_by: User;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date_created: Date;
+
+    @ManyToOne(type => Organization)
+    @JoinColumn({ name: 'organization_id' })
+    organization: Organization;
+
+    
+    @ManyToOne(type => SubOrganization)
+    @JoinColumn({ name: 'sub_organization_id' })
+    subOrganization: SubOrganization;
+
+    @ManyToOne(type => Site)
+    @JoinColumn({ name: 'site_id' })
+    site: Site;
+
+    @ManyToOne(type => SiteContracts)
+    @JoinColumn({ name: 'contract_id' })
+    contract: SiteContracts;
+}
+
+@Entity()
+export class SiteContractorWorkLog {
+    @PrimaryGeneratedColumn()
+    id: number;
+    
+    @Column()
+    amount: string;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    work_from: Date;
+    
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    work_to: Date;
+    
+    @Column()
+    no_of_units: number;
+    
+    @Column()
+    note: string;
+
+    @ManyToOne(type => User)
+    @JoinColumn({ name: 'created_by_id' })
+    created_by: User;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date_created: Date;
+
+    @ManyToOne(type => Organization)
+    @JoinColumn({ name: 'organization_id' })
+    organization: Organization;
+
+    
+    @ManyToOne(type => SubOrganization)
+    @JoinColumn({ name: 'sub_organization_id' })
+    subOrganization: SubOrganization;
+
+    @ManyToOne(type => Site)
+    @JoinColumn({ name: 'site_id' })
+    site: Site;
+
+    @ManyToOne(type => SiteContracts)
+    @JoinColumn({ name: 'contract_id' })
+    contract: SiteContracts;
+}
+
+@Entity()
+export class SiteContractorPayments {
+    @PrimaryGeneratedColumn()
+    id: number;
+    
+    @Column()
+    amount: string;
+ 
+    @Column({nullable:true, default:false})
+    is_paid: boolean;
+
+    @Column()
+    note: string;
+
+    @ManyToOne(type => User)
+    @JoinColumn({ name: 'created_by_id' })
+    created_by: User;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date_created: Date;
+
+    @ManyToOne(type => Organization)
+    @JoinColumn({ name: 'organization_id' })
+    organization: Organization;
+
+    
+    @ManyToOne(type => SubOrganization)
+    @JoinColumn({ name: 'sub_organization_id' })
+    subOrganization: SubOrganization;
+
+    @ManyToOne(type => Site)
+    @JoinColumn({ name: 'site_id' })
+    site: Site;
+
+    @ManyToOne(type => SiteContracts)
+    @JoinColumn({ name: 'contract_id' })
+    contract: SiteContracts;
 }

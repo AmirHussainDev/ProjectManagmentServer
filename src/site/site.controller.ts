@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Put } from '@nestjs/common';
 import { SiteService } from './site.service';
 import { AuthGuard } from '@nestjs/passport';
-import { SiteContracts, Site } from './site.entity';
+import { SiteContracts, Site, SiteExpenses, SiteOwnerPayments, SiteContractorWorkLog, SiteContractorPayments } from './site.entity';
 
 @Controller('api/Sites')
 export class SiteController {
@@ -52,13 +52,82 @@ export class SiteController {
 
     @UseGuards(AuthGuard('jwt'))
     @Get('contracts/:orgId/:subOrg/:siteId')
-    get_contracts_request(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string,@Param('siteId') siteId: string) {
+    get_contracts_request(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string) {
         return this.SiteService.getAllContracts(parseInt(orgId), parseInt(subOrg), parseInt(siteId));
     }
 
     @UseGuards(AuthGuard('jwt'))
     @Get('contract/:organizationId/:siteId/:contractId')
-    get_contract_request(@Param('organizationId') orgId: string, @Param('siteId') siteId: string,@Param('contractId') subOrg: string) {
-        return this.SiteService.getContract(parseInt(orgId),parseInt(siteId),parseInt(subOrg));
+    get_contract_request(@Param('organizationId') orgId: string, @Param('siteId') siteId: string, @Param('contractId') subOrg: string) {
+        return this.SiteService.getContract(parseInt(orgId), parseInt(siteId), parseInt(subOrg));
     }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('expenses')
+    createSiteExpense(@Body() requestDetails: SiteExpenses) {
+        return this.SiteService.createSiteExpenses(requestDetails);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Put('expenses')
+    updateSiteExpenses(@Body() requestDetails: SiteContracts) {
+        return this.SiteService.updateSiteExpenses(requestDetails);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('expenses/:orgId/:subOrg/:siteId')
+    getSiteExpenses(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string) {
+        return this.SiteService.getSiteExpenses(parseInt(orgId),  parseInt(subOrg),parseInt(siteId));
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('ownerpayment')
+    createSiteOwnerPayment(@Body() requestDetails: SiteOwnerPayments) {
+        return this.SiteService.createSiteOwnerPayment(requestDetails);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Put('ownerpayment')
+    updateSiteOwnerPayments(@Body() requestDetails: SiteOwnerPayments) {
+        return this.SiteService.updateSiteOwnerPayments(requestDetails);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('ownerpayment/:orgId/:subOrg/:siteId')
+    getSiteOwnerPayments(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string) {
+        return this.SiteService.getSiteOwnerPayments(parseInt(orgId),  parseInt(subOrg),parseInt(siteId));
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('contractorspayment/:orgId/:subOrg/:siteId')
+    getSiteContractorsPayments(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string) {
+        return this.SiteService.getSiteContractorsPayments(parseInt(orgId),  parseInt(subOrg),parseInt(siteId));
+    }
+    
+    @UseGuards(AuthGuard('jwt'))
+    @Post('contractworklog')
+    createSiteContractworklog(@Body() requestDetails: SiteContractorWorkLog) {
+        return this.SiteService.createSiteWorkLog(requestDetails);
+    }
+
+   
+    @UseGuards(AuthGuard('jwt'))
+    @Get('contractworklog/:orgId/:subOrg/:siteId/:contractId')
+    getSiteContractPayments(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string, @Param('contractId') contractId: string) {
+        return this.SiteService.getSiteWorkLogs(parseInt(orgId),  parseInt(subOrg),parseInt(siteId),parseInt(contractId));
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('contractpayment')
+    createSiteContractPayment(@Body() requestDetails: SiteContractorPayments) {
+        return this.SiteService.createSiteContractPayment(requestDetails);
+    }
+
+   
+    @UseGuards(AuthGuard('jwt'))
+    @Get('contractpayment/:orgId/:subOrg/:siteId/:contractId')
+    getSiteContractworklogs(@Param('orgId') orgId: string, @Param('subOrg') subOrg: string, @Param('siteId') siteId: string, @Param('contractId') contractId: string) {
+        return this.SiteService.getSiteContractPayments(parseInt(orgId),  parseInt(subOrg),parseInt(siteId),parseInt(contractId));
+    }
+
 }
