@@ -18,6 +18,8 @@ import { RolePermissionsModule } from './role-permissions/role-permissions.modul
 import { RolePermissions } from './role-permissions/role-permissions.entity';
 import { InventoryPurchaseModule } from './inventory-purchase/inventory-purchase.module';
 import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest } from './inventory-purchase/inventory-purchase.entity';
+import { EmployeeModule } from './employee/employee.module';
+import { Employee } from './employee/employee.entity';
 @Global()
 @Module({
   imports: [
@@ -46,7 +48,8 @@ import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest }
         SiteOwnerPayments,
         SiteContractPayments,
         SiteContractorPayments,
-        SiteContractorWorkLog
+        SiteContractorWorkLog,
+        Employee
       ],
       synchronize: true,
     }),
@@ -61,6 +64,7 @@ import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest }
     AuthModule,
     RolePermissionsModule,
     InventoryPurchaseModule,
+    EmployeeModule,
   ],
   controllers: [AppController, SiteController],
   providers: [AppService, UserService, AuthService, SiteService],

@@ -25,7 +25,7 @@ export class Site {
     @JoinColumn({ name: 'created_by' })
     created_by: User;
 
-    @Column({nullable:true, type: 'decimal', precision: 10, scale: 2, default: 0.0 })
+    @Column({ nullable: true, type: 'decimal', precision: 10, scale: 2, default: 0.0 })
     total: number;
 
     @Column()
@@ -53,17 +53,17 @@ export class SiteExpenses {
 
     @Column()
     name: string;
-    
+
     @Column()
     is_general: boolean;
 
-    @Column({nullable:true})
+    @Column({ nullable: true })
     purchase_id: number;
 
     @Column()
     is_paid: boolean;
-        
- 
+
+
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
     amount: number;
 
@@ -72,11 +72,11 @@ export class SiteExpenses {
 
     @Column()
     quantity: number;
-    
-    @Column({nullable:true})
+
+    @Column({ nullable: true })
     note: string;
 
-    @Column({nullable:true})
+    @Column({ nullable: true })
     refered_by: number;
 
     @ManyToOne(type => User)
@@ -90,7 +90,7 @@ export class SiteExpenses {
     @JoinColumn({ name: 'organization_id' })
     organization: Organization;
 
-    
+
     @ManyToOne(type => SubOrganization)
     @JoinColumn({ name: 'sub_organization_id' })
     subOrganization: SubOrganization;
@@ -108,13 +108,13 @@ export class SiteOwnerPayments {
 
     @Column()
     name: string;
-    
+
     @Column()
     amount: string;
 
     @Column()
     is_paid: boolean;
-        
+
     @Column()
     note: string;
 
@@ -129,7 +129,7 @@ export class SiteOwnerPayments {
     @JoinColumn({ name: 'organization_id' })
     organization: Organization;
 
-    
+
     @ManyToOne(type => SubOrganization)
     @JoinColumn({ name: 'sub_organization_id' })
     subOrganization: SubOrganization;
@@ -168,7 +168,7 @@ export class SiteContracts {
     @Column({ nullable: true })
     terms: string;
 
-    @Column({nullable:true, type: 'decimal', precision: 10, scale: 2, default: 0.0 })
+    @Column({ nullable: true, type: 'decimal', precision: 10, scale: 2, default: 0.0 })
     total: number;
 
     @Column()
@@ -209,13 +209,13 @@ export class SiteContracts {
 export class SiteContractPayments {
     @PrimaryGeneratedColumn()
     id: number;
-    
+
     @Column()
     amount: string;
 
     @Column()
     is_paid: boolean;
-        
+
     @Column()
     note: string;
 
@@ -230,7 +230,7 @@ export class SiteContractPayments {
     @JoinColumn({ name: 'organization_id' })
     organization: Organization;
 
-    
+
     @ManyToOne(type => SubOrganization)
     @JoinColumn({ name: 'sub_organization_id' })
     subOrganization: SubOrganization;
@@ -248,19 +248,19 @@ export class SiteContractPayments {
 export class SiteContractorWorkLog {
     @PrimaryGeneratedColumn()
     id: number;
-    
+
     @Column()
     amount: string;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     work_from: Date;
-    
+
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     work_to: Date;
-    
+
     @Column()
     no_of_units: number;
-    
+
     @Column()
     note: string;
 
@@ -275,7 +275,7 @@ export class SiteContractorWorkLog {
     @JoinColumn({ name: 'organization_id' })
     organization: Organization;
 
-    
+
     @ManyToOne(type => SubOrganization)
     @JoinColumn({ name: 'sub_organization_id' })
     subOrganization: SubOrganization;
@@ -293,11 +293,11 @@ export class SiteContractorWorkLog {
 export class SiteContractorPayments {
     @PrimaryGeneratedColumn()
     id: number;
-    
+
     @Column()
     amount: string;
- 
-    @Column({nullable:true, default:false})
+
+    @Column({ nullable: true, default: false })
     is_paid: boolean;
 
     @Column()
@@ -314,7 +314,7 @@ export class SiteContractorPayments {
     @JoinColumn({ name: 'organization_id' })
     organization: Organization;
 
-    
+
     @ManyToOne(type => SubOrganization)
     @JoinColumn({ name: 'sub_organization_id' })
     subOrganization: SubOrganization;
