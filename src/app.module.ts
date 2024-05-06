@@ -19,7 +19,7 @@ import { RolePermissions } from './role-permissions/role-permissions.entity';
 import { InventoryPurchaseModule } from './inventory-purchase/inventory-purchase.module';
 import { InventoryItem, PurchaseItems, PurchaseRequest, SaleItems, SaleRequest } from './inventory-purchase/inventory-purchase.entity';
 import { EmployeeModule } from './employee/employee.module';
-import { Employee } from './employee/employee.entity';
+import { Attendance, Employee, EmployeePayments } from './employee/employee.entity';
 @Global()
 @Module({
   imports: [
@@ -49,7 +49,9 @@ import { Employee } from './employee/employee.entity';
         SiteContractPayments,
         SiteContractorPayments,
         SiteContractorWorkLog,
-        Employee
+        Employee,
+        Attendance,
+        EmployeePayments
       ],
       synchronize: true,
     }),

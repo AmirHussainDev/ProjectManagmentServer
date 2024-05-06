@@ -6,7 +6,7 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ unique: true })
     name: string;
 
     @Column()
@@ -22,7 +22,7 @@ export class User {
     @Column('text', { nullable: true })
     password: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('text', { unique: true, nullable: true })
     email: string[];
 
     @Column('text', { nullable: true })
@@ -34,3 +34,4 @@ export class User {
     @Column('text', { nullable: true })
     role_id: number;
 }
+ 
