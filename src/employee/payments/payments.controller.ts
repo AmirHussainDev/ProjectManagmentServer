@@ -12,11 +12,18 @@ export class PaymentsController {
     createPayments(@Body() body) {
         return this.employeeService.createPayments(body);
     }
+   
 
     @UseGuards(AuthGuard('jwt'))
     @Get('employees/:orgId/:subOrgId')
     getAllEmployeeDuePayments(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string) {
         return this.employeeService.getAllEmployeeDuePayments(parseInt(orgId), parseInt(subOrgId));
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('employee/:orgId/:subOrgId/:employeeId')
+    getAllEmployeePayments(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string, @Param('employeeId') employeeId: string) {
+        return this.employeeService.getAllEmployeePayments(parseInt(orgId), parseInt(subOrgId),parseInt(employeeId));
     }
 
 }

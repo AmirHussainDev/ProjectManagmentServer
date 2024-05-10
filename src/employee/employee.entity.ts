@@ -32,6 +32,14 @@ export class Employee {
     @Column()
     overtime: boolean;
 
+    @Column({ nullable: true })
+    isSalaryHourly: boolean;
+
+    @Column({ nullable: true })
+    workingHours: number;
+
+
+
     @Column()
     siginout_required: boolean;
 
@@ -74,9 +82,12 @@ export class Attendance {
 
     @Column({ nullable: true })
     approved_hours: number;
-
-    @Column({ nullable: true })
+    
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
     amount: number;
+
+    @Column({nullable:true,  type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    attendance_date: Date;
 
     @ManyToOne(type => User)
     @JoinColumn({ name: 'created_by_id' })
@@ -108,6 +119,15 @@ export class EmployeePayments {
     @Column({ nullable: true })
     payment_notes: string;
 
+
+    @ManyToOne(type => Organization)
+    @JoinColumn({ name: 'organization_id' })
+    organization: Organization;
+
+    @ManyToOne(type => SubOrganization)
+    @JoinColumn({ name: 'sub_organization_id' })
+    subOrganization: SubOrganization;
+    
     @ManyToOne(type => User)
     @JoinColumn({ name: 'created_by_id' })
     created_by: User;

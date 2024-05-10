@@ -69,6 +69,8 @@ export class EmployeeService {
             .addSelect('em.supervisor_id', 'supervisor')
             .addSelect('em.salary', 'salary')
             .addSelect('em.overtime', 'overtime')
+            .addSelect('em.workingHours', 'workingHours')
+            .addSelect('em.workingHours', 'isSalaryHourly')
             .addSelect('em.siginout_required', 'siginout_required')
             .where('em.organization_id = :organizationId', { organizationId })
             .andWhere('em.sub_organization_id = :subOrganizationId', { subOrganizationId })
@@ -121,7 +123,7 @@ export class EmployeeService {
                 employee: { id: employeeId },
                 date_created: Between(currentDateStart, currentDateEnd),
             },
-            
+
         });
     }
 
@@ -161,19 +163,28 @@ export class EmployeeService {
         return this.employeePaymentsRepository.save(Employee) as any;
     }
 
+    async getAllEmployeePayments(organizationId: number, subOrganizationId: number,employeeId:number) {
+            const payments = await this.employeePaymentsRepository.find({
+                where: {
+                    organization: { id: organizationId },
+                    subOrganization: { id: subOrganizationId },
+                    employee:{id:employeeId}
+                },
+                order: { date_created: 'DESC' },
+            });
 
+            return payments
+    }
     async getAllEmployeeDuePayments(organizationId: number, subOrganizationId: number) {
         const paymentArray = []
 
         try {
-
-
             const employees = await this.employeeRepository.find({
                 where: {
                     organization: { id: organizationId },
                     subOrganization: { id: subOrganizationId }
                 },
-                relations:['employee','supervisor'],
+                relations: ['employee', 'supervisor'],
                 order: { date_created: 'DESC' },
             });
 
@@ -193,11 +204,11 @@ export class EmployeeService {
                     .andWhere("attendance.date_created >= :lastPaymentDate", { lastPaymentDate: lastPayment ? lastPayment.date_created : employees[i].date_created })
                     .getRawOne();
 
-                paymentObject.balance = (lastPayment?.balance || 0 );
+                paymentObject.balance = (lastPayment?.balance || 0);
                 paymentArray.push({ employee: employees[i], paymentObject })
             }
 
-           
+
         } catch (err) {
             console.error(err)
         } finally {
