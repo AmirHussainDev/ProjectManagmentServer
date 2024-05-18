@@ -60,7 +60,7 @@ export class EmployeeService {
     }
 
     async getAllEmployees(organizationId: number, subOrganizationId: number) {
-        console.log('here')
+        // console.log('here')
         const siteContracts = await this.employeeRepository
             .createQueryBuilder('em')
             .select('em.id', 'id')

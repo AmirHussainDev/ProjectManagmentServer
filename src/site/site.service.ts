@@ -147,7 +147,7 @@ export class SiteService {
     }
 
     async getSiteContractorsPayments(organizationId: number, subOrganizationId: number, siteId: number) {
-       console.log('here')
+       // console.log('here')
         const siteContracts = await this.SiteContractsRepository
         .createQueryBuilder('sc')
         .select('sc.id', 'id')

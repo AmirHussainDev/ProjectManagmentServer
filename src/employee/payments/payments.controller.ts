@@ -4,7 +4,7 @@ import { EmployeeService } from '../employee.service';
 
 @Controller('api/payments')
 export class PaymentsController {
-    constructor(private employeeService: EmployeeService){
+    constructor(private employeeService: EmployeeService) {
 
     }
     @UseGuards(AuthGuard('jwt'))
@@ -12,7 +12,7 @@ export class PaymentsController {
     createPayments(@Body() body) {
         return this.employeeService.createPayments(body);
     }
-   
+
 
     @UseGuards(AuthGuard('jwt'))
     @Get('employees/:orgId/:subOrgId')
@@ -23,7 +23,7 @@ export class PaymentsController {
     @UseGuards(AuthGuard('jwt'))
     @Get('employee/:orgId/:subOrgId/:employeeId')
     getAllEmployeePayments(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string, @Param('employeeId') employeeId: string) {
-        return this.employeeService.getAllEmployeePayments(parseInt(orgId), parseInt(subOrgId),parseInt(employeeId));
+        return this.employeeService.getAllEmployeePayments(parseInt(orgId), parseInt(subOrgId), parseInt(employeeId));
     }
 
 }
