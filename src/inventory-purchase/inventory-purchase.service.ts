@@ -32,11 +32,11 @@ export class InventoryPurchaseService {
       await this.PurchaseRequestRepository.createQueryBuilder('sr')
         .select('MAX(sr.purchase_no)', 'maxPurchaseNo')
         .where('sr.sub_organization_id = :subOrganizationId', {
-          subOrganizationId: itemDetails.details.sub_organization_id,
+          subOrganizationId: itemDetails.details['sub_organization_id'],
         })
         .getRawOne();
     const nextPurchaseNo = maxPurchaseNo.maxPurchaseNo + 1;
-    const purchase = this.PurchaseRequestRepository.create({
+    const purchase = await this.PurchaseRequestRepository.create({
       ...itemDetails.details,
       purchase_no:
         maxPurchaseNo && maxPurchaseNo.maxPurchaseNo ? nextPurchaseNo : 1,
@@ -44,7 +44,7 @@ export class InventoryPurchaseService {
     const resp = await this.PurchaseRequestRepository.save(purchase);
     itemDetails.products = itemDetails.products.map((item) => ({
       ...item,
-      purchase_id: resp.id,
+      purchase: resp,
     }));
     this.PurchaseItemsRepository.save(itemDetails.products);
     return resp;
@@ -66,21 +66,26 @@ export class InventoryPurchaseService {
     }
 
     if (itemDetails.details.state == 4) {
-      const po = await this.PurchaseRequestRepository.findOneBy({
-        id: itemDetails.details.id,
+      const po = await this.PurchaseRequestRepository.findOne({
+        where: {
+          id: itemDetails.details.id,
+        },
+        relations: ['created_by', 'organization', 'subOrganization', 'vendor'],
       });
-      const products = await this.PurchaseItemsRepository.findBy({
-        purchase_id: po.id,
+      const products = await this.PurchaseItemsRepository.find({
+        where: {
+          purchase: { id: po.id },
+        },
       });
       for (const product of products) {
         if (!product.isCustom) {
           const inventory = {
-            organization_id: po.organization_id,
-            sub_organization_id: po.sub_organization_id,
+            organization_id: po.organization.id,
+            sub_organization_id: po.subOrganization.id,
             purchase_id: po.id,
             stock_in: true,
             name: product.name,
-            vendor_id: po.vendor_id,
+            vendor_id: po.vendor.id,
             isSiteBased: po.isSiteBased,
             site_ids: po.site_ids,
             qty: product.qty,
@@ -105,18 +110,18 @@ export class InventoryPurchaseService {
     const maxSaleNo = await this.SaleRequestRepository.createQueryBuilder('sr')
       .select('MAX(sr.sale_no)', 'sale_no')
       .where('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId: itemDetails.details.sub_organization_id,
+        subOrganizationId: itemDetails.details['sub_organization_id'],
       })
       .getRawOne();
     const nextSaleNo = maxSaleNo.sale_no + 1;
-    const sale = this.SaleRequestRepository.create({
+    const sale = await this.SaleRequestRepository.create({
       ...itemDetails.details,
       sale_no: maxSaleNo && maxSaleNo.sale_no ? nextSaleNo : 1,
     });
     const resp = await this.SaleRequestRepository.save(sale);
     itemDetails.products = itemDetails.products.map((item) => ({
       ...item,
-      sale_id: resp.id,
+      sale: resp,
     }));
     this.SaleItemsRepository.save(itemDetails.products);
     return resp;
@@ -137,16 +142,19 @@ export class InventoryPurchaseService {
       await this.SaleItemsRepository.update(product.id, product);
     }
     if (itemDetails.details.state == 4) {
-      const so = await this.SaleRequestRepository.findOneBy({
-        id: itemDetails.details.id,
+      const so = await this.SaleRequestRepository.findOne({
+        where: {
+          id: itemDetails.details.id,
+        },
+        relations: ['created_by', 'organization', 'subOrganization'],
       });
       const products = await this.SaleItemsRepository.findByIds(
         itemDetails.products.map((pr) => pr.id),
       );
       for (const product of products) {
         const inventory = {
-          organization_id: so.organization_id,
-          sub_organization_id: so.sub_organization_id,
+          organization_id: so.organization.id,
+          sub_organization_id: so.subOrganization.id,
           sale_id: so.id,
           stock_in: false,
           name: product.name,
@@ -291,15 +299,63 @@ export class InventoryPurchaseService {
 
   async getPurchaseRequest(
     organizationId: number,
+    subOrganizationId: number,
     purchaseId: number,
-  ): Promise<any[]> {
-    const query = `
-      SELECT * FROM get_purchase_request($1, $2)
-    `;
-    return await this.PurchaseRequestRepository.query(query, [
-      purchaseId,
-      organizationId,
-    ]);
+  ): Promise<any> {
+    const result = await this.PurchaseRequestRepository.createQueryBuilder('pr')
+      .leftJoinAndSelect('pr.vendor', 'v')
+      .leftJoinAndSelect('pr.created_by', 'u')
+      .leftJoinAndSelect('pr.subOrganization', 'so')
+      .select([
+        'pr.id',
+        'pr.state',
+        'pr.isSiteBased',
+        'pr.purchase_no',
+        'pr.site_ids',
+        'pr.organization_id',
+        'pr.sub_organization_id',
+        'pr.vendor_id',
+        'v.name',
+        'v.filename',
+        'v.id',
+        'pr.created_by',
+        'u.name',
+        'so.name',
+        'pr.date_created',
+        'pr.total',
+        'pr.notes',
+        'pr.additional_cost',
+        'pr.balance_to_be_paid_on',
+        'pr.date_confirmation_on',
+        'pr.item_cost',
+        'pr.shipment_charges',
+        'pr.amount_paid',
+        'pr.balance',
+        'pr.subject',
+        'pr.items_discount_total',
+        'pr.overall_discount_total',
+        'pr.overall_discount',
+        'pr.invoice_date',
+        'pr.due_date',
+        'pr.sales_person',
+        'pr.attachment',
+        'pr.terms',
+      ])
+      .where('pr.purchase_no = :purchaseId', { purchaseId })
+      .andWhere('pr.organization_id = :organizationId', { organizationId })
+      .andWhere('pr.sub_organization_id = :subOrganizationId', {
+        subOrganizationId,
+      })
+      .getOne();
+
+    if (result && result.id) {
+      const items = await this.PurchaseItemsRepository.findBy({
+        purchase: { id: result.id },
+      });
+
+      result['items'] = items;
+    }
+    return result;
   }
 
   async getSaleRequests(
@@ -315,14 +371,59 @@ export class InventoryPurchaseService {
     ]);
   }
 
-  async getSaleRequest(organizationId: number, saleId: number): Promise<any[]> {
-    const query = `
-      SELECT * FROM get_sale_request($1, $2)
-    `;
-    return await this.SaleRequestRepository.query(query, [
-      saleId,
-      organizationId,
-    ]);
+  async getSaleRequest(
+    organizationId: number,
+    subOrganizationId: number,
+    saleId: number,
+  ): Promise<any> {
+    const result = await this.SaleRequestRepository.createQueryBuilder('sr')
+      .leftJoinAndSelect('sr.created_by', 'u')
+      .leftJoinAndSelect('sr.subOrganization', 'so')
+      .select([
+        'sr.id',
+        'sr.state',
+        'sr.organization_id',
+        'sr.sub_organization_id',
+        'sr.created_by',
+        'sr.sale_no',
+        'u.name',
+        'so.name',
+        'sr.date_created',
+        'sr.total',
+        'sr.notes',
+        'sr.additional_cost',
+        'sr.balance_to_be_paid_on',
+        'sr.date_confirmation_on',
+        'sr.item_cost',
+        'sr.shipment_charges',
+        'sr.amount_paid',
+        'sr.balance',
+        'sr.payment_history',
+        'sr.subject',
+        'sr.items_discount_total',
+        'sr.overall_discount_total',
+        'sr.overall_discount',
+        'sr.invoice_date',
+        'sr.due_date',
+        'sr.sales_person',
+        'sr.attachment',
+        'sr.terms',
+      ])
+      .where('sr.sale_no = :saleId', { saleId })
+      .andWhere('sr.organization_id = :organizationId', { organizationId })
+      .andWhere('sr.sub_organization_id = :subOrganizationId', {
+        subOrganizationId,
+      })
+      .getOne();
+
+    if (result && result.id) {
+      const items = await this.SaleItemsRepository.findBy({
+        sale: { id: result.id },
+      });
+
+      result['items'] = items;
+    }
+    return result;
   }
 
   async createInventoryItem(

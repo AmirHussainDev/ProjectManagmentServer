@@ -65,13 +65,15 @@ export class InventoryPurchaseController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('purchase-request-by-id/:orgId/:purchaseId')
+  @Get('purchase-request-by-id/:orgId/:subOrgId/:purchaseId')
   get_purchase_request(
     @Param('orgId') orgId: string,
+    @Param('subOrgId') subOrgId: string,
     @Param('purchaseId') purchaseId: string,
   ) {
     return this.inventoryPurcahseService.getPurchaseRequest(
       parseInt(orgId),
+      parseInt(subOrgId),
       parseInt(purchaseId),
     );
   }
@@ -118,13 +120,15 @@ export class InventoryPurchaseController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('sale-request-by-id/:orgId/:saleId')
+  @Get('sale-request-by-id/:orgId/:subOrgId/:saleId')
   get_sale_request(
     @Param('orgId') orgId: string,
+    @Param('subOrgId') subOrgId: string,
     @Param('saleId') saleId: string,
   ) {
     return this.inventoryPurcahseService.getSaleRequest(
       parseInt(orgId),
+      parseInt(subOrgId),
       parseInt(saleId),
     );
   }

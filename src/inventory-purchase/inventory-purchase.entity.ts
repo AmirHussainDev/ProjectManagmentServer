@@ -4,16 +4,12 @@ import {
   Vendor,
 } from 'src/organization/organization.entity';
 import { User } from 'src/user/user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity()
 export class PurchaseRequest {
   @PrimaryGeneratedColumn()
   id: number;
-
-  @Column()
-  @ManyToOne(() => Organization)
-  organization_id: number;
 
   @Column({ nullable: true })
   isSiteBased: boolean;
@@ -21,17 +17,21 @@ export class PurchaseRequest {
   @Column({ nullable: true })
   site_ids: string;
 
-  @Column()
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
   @ManyToOne(() => SubOrganization)
-  sub_organization_id: number;
+  @JoinColumn({ name: 'sub_organization_id' })
+  subOrganization: SubOrganization;
 
-  @Column()
   @ManyToOne(() => User)
-  created_by: number;
+  @JoinColumn({ name: 'created_by_id' })
+  created_by: User;
 
-  @Column()
   @ManyToOne(() => Vendor)
-  vendor_id: number;
+  @JoinColumn({ name: 'vendor_id' })
+  vendor: Vendor;
 
   @Column({ nullable: true })
   notes: string;
@@ -46,7 +46,7 @@ export class PurchaseRequest {
   item_cost: number;
 
   @Column({
-    nullable: true,
+    nullable: true, 
     type: 'decimal',
     precision: 10,
     scale: 2,
@@ -163,9 +163,9 @@ export class PurchaseItems {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
   @ManyToOne(() => PurchaseRequest)
-  purchase_id: number;
+  @JoinColumn({ name: 'purchase_id' })
+  purchase: PurchaseRequest;
 
   @Column()
   name: string;
@@ -216,17 +216,17 @@ export class SaleRequest {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
   @ManyToOne(() => Organization)
-  organization_id: number;
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
-  @Column()
   @ManyToOne(() => SubOrganization)
-  sub_organization_id: number;
+  @JoinColumn({ name: 'sub_organization_id' })
+  subOrganization: SubOrganization;
 
-  @Column()
   @ManyToOne(() => User)
-  created_by: number;
+  @JoinColumn({ name: 'created_by_id' })
+  created_by: User;
 
   @Column({ nullable: true })
   notes: string;
@@ -236,7 +236,7 @@ export class SaleRequest {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    default: 0.0,
+    default: 0.0, 
   })
   item_cost: number;
 
@@ -359,9 +359,9 @@ export class SaleItems {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
   @ManyToOne(() => SaleRequest)
-  sale_id: number;
+  @JoinColumn({ name: 'sale_id' })
+  sale: SaleRequest;
 
   @Column({ nullable: true })
   @ManyToOne(() => Vendor)
