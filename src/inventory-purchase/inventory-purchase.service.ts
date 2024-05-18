@@ -28,20 +28,18 @@ export class InventoryPurchaseService {
     details: PurchaseRequest;
     products: PurchaseItems[];
   }): Promise<PurchaseRequest> {
-    const maxPurchaseNo = await this.PurchaseItemsRepository.createQueryBuilder(
-      'sr',
-    )
-      .select('MAX(sr.purchase_no)', 'maxPurchaseNo')
-      .where('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId: itemDetails.details.sub_organization_id,
-      })
-      .getRawOne();
+    const maxPurchaseNo =
+      await this.PurchaseRequestRepository.createQueryBuilder('sr')
+        .select('MAX(sr.purchase_no)', 'maxPurchaseNo')
+        .where('sr.sub_organization_id = :subOrganizationId', {
+          subOrganizationId: itemDetails.details.sub_organization_id,
+        })
+        .getRawOne();
+    const nextPurchaseNo = maxPurchaseNo.maxPurchaseNo + 1;
     const purchase = this.PurchaseRequestRepository.create({
       ...itemDetails.details,
       purchase_no:
-        maxPurchaseNo && maxPurchaseNo.maxPurchaseNo
-          ? maxPurchaseNo.maxPurchaseNo++
-          : 1,
+        maxPurchaseNo && maxPurchaseNo.maxPurchaseNo ? nextPurchaseNo : 1,
     });
     const resp = await this.PurchaseRequestRepository.save(purchase);
     itemDetails.products = itemDetails.products.map((item) => ({
@@ -110,10 +108,10 @@ export class InventoryPurchaseService {
         subOrganizationId: itemDetails.details.sub_organization_id,
       })
       .getRawOne();
-
+    const nextSaleNo = maxSaleNo.sale_no + 1;
     const sale = this.SaleRequestRepository.create({
       ...itemDetails.details,
-      sale_no: maxSaleNo && maxSaleNo.sale_no ? maxSaleNo.sale_no++ : 1,
+      sale_no: maxSaleNo && maxSaleNo.sale_no ? nextSaleNo : 1,
     });
     const resp = await this.SaleRequestRepository.save(sale);
     itemDetails.products = itemDetails.products.map((item) => ({
@@ -202,13 +200,44 @@ export class InventoryPurchaseService {
     organizationId: number,
     subOrganizationId: number,
   ): Promise<any[]> {
-    const query = `
-      SELECT * FROM get_all_purchase_requests($1, $2)
-    `;
-    return await this.PurchaseRequestRepository.query(query, [
-      organizationId,
-      subOrganizationId,
-    ]);
+    const query = this.PurchaseRequestRepository.createQueryBuilder('pr')
+      .select('pr.id', 'id')
+      .addSelect('pr.state', 'state')
+      .addSelect('pr.purchase_no', 'purchase_no')
+      .addSelect('pr.organization_id', 'organization_id')
+      .addSelect('pr.sub_organization_id', 'sub_organization_id')
+      .addSelect('pr.created_by', 'created_by')
+      .addSelect('u.name', 'created_by_name')
+      .addSelect('so.name', 'sub_organization_name')
+      .addSelect('pr.date_created', 'date_created')
+      .addSelect('pr.total', 'total')
+      .addSelect('pr.notes', 'notes')
+      .addSelect('pr.additional_cost', 'additional_cost')
+      .addSelect('pr.balance_to_be_paid_on', 'balance_to_be_paid_on')
+      .addSelect('pr.date_confirmation_on', 'date_confirmation_on')
+      .addSelect('pr.item_cost', 'item_cost')
+      .addSelect('pr.shipment_charges', 'shipment_charges')
+      .addSelect('pr.amount_paid', 'amount_paid')
+      .addSelect('pr.balance', 'balance')
+      .addSelect('v.filename', 'filename')
+      .addSelect('v.name', 'vendor_name')
+      .addSelect('pr.subject', 'subject')
+      .addSelect('pr.items_discount_total', 'items_discount_total')
+      .addSelect('pr.overall_discount_total', 'overall_discount_total')
+      .addSelect('pr.overall_discount', 'overall_discount')
+      .addSelect('pr.invoice_date', 'invoice_date')
+      .addSelect('pr.due_date', 'due_date')
+      .addSelect('pr.sales_person', 'sales_person')
+      .addSelect('pr.attachment', 'attachment')
+      .addSelect('pr.terms', 'terms')
+      .leftJoin('user', 'u', 'pr.created_by = u.id')
+      .leftJoin('vendor', 'v', 'pr.vendor_id = v.id')
+      .leftJoin('sub_organization', 'so', 'pr.sub_organization_id = so.id')
+      .where('pr.organization_id = :organizationId', { organizationId })
+      .andWhere('pr.sub_organization_id = :subOrganizationId', {
+        subOrganizationId,
+      });
+    return await query.getRawMany();
   }
 
   async getSalesRequests(
