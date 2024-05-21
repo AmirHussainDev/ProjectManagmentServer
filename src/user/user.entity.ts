@@ -1,5 +1,6 @@
 import { Organization, SubOrganization } from 'src/organization/organization.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { RolePermissions } from 'src/role-permissions/role-permissions.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -23,15 +24,25 @@ export class User {
     password: string;
 
     @Column('text', { unique: true, nullable: true })
-    email: string[];
+    email: string;
+
+    @Column('text', { unique: true, nullable: true })
+    contact_no: string;
 
     @Column('text', { nullable: true })
-    image: string[];
+    address: string;
+
+    @Column('text', { nullable: true })
+    image: string;
 
     @Column('text', { nullable: true })
     reports_to: number;
 
-    @Column('text', { nullable: true })
-    role_id: number;
+    @Column('boolean', { nullable: true })
+    is_admin: boolean;
+   
+    @ManyToOne(() => RolePermissions)
+    @JoinColumn({ name: 'role_id' }) 
+    role: RolePermissions;
 }
  
