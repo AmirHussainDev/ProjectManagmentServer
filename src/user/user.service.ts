@@ -16,14 +16,23 @@ export class UserService {
     const User = this.UserRepository.create({ ...userObj, password: hash });
     return this.UserRepository.save(User) as any;
   }
+  async changePassword(userObj: any): Promise<boolean> {
+    const hash = bcrypt.hashSync(userObj.password, 10);
+    await this.UserRepository.update(
+      { id: userObj.id, organization_id: userObj.organization_id },
+      {
+        password: hash,
+      },
+    );
+    return true;
+  }
   async updateUser(userObj: any): Promise<User> {
     // Update the user
     await this.UserRepository.update(
       { id: userObj.id, organization_id: userObj.organization_id },
       {
-        role: { id: userObj.role_id },
+        ...userObj,
         reports_to: userObj.reports_to,
-        name: userObj.name,
       },
     );
 
@@ -79,8 +88,7 @@ export class UserService {
     return this.UserRepository.find({
       where: { organization_id },
       relations: ['role'],
-      order: { name: 'ASC' }
-
+      order: { name: 'ASC' },
     });
   }
 }
