@@ -83,6 +83,7 @@ export class InventoryPurchaseService {
             organization_id: po.organization.id,
             sub_organization_id: po.subOrganization.id,
             purchase_id: po.id,
+            purchase_no: po.purchase_no,
             stock_in: true,
             name: product.name,
             vendor_id: po.vendor.id,
@@ -152,26 +153,29 @@ export class InventoryPurchaseService {
         itemDetails.products.map((pr) => pr.id),
       );
       for (const product of products) {
-        const inventory = {
-          organization_id: so.organization.id,
-          sub_organization_id: so.subOrganization.id,
-          sale_id: so.id,
-          stock_in: false,
-          name: product.name,
-          vendor_id: product.vendor_id,
-          qty:
-            product.qty -
-            product.return_details.reduce(
-              (total, obj) => total + obj.qty * 1,
-              0,
-            ),
-          unit_price: product.unit_price,
-          description: so.subject,
-          total: product.total - this.sumReturnAmount(product.return_details),
-          date_created: new Date(),
-        };
-        const inventoryItem = this.inventoryItemRepository.create(inventory);
-        await this.inventoryItemRepository.save(inventoryItem);
+        if (!product.isCustom) {
+          const inventory = {
+            organization_id: so.organization.id,
+            sub_organization_id: so.subOrganization.id,
+            sale_id: so.id,
+            sale_no: so.sale_no,
+            stock_in: false,
+            name: product.name,
+            vendor_id: product.vendor_id,
+            qty:
+              product.qty -
+              product.return_details.reduce(
+                (total, obj) => total + obj.qty * 1,
+                0,
+              ),
+            unit_price: product.unit_price,
+            description: so.subject,
+            total: product.total - this.sumReturnAmount(product.return_details),
+            date_created: new Date(),
+          };
+          const inventoryItem = this.inventoryItemRepository.create(inventory);
+          await this.inventoryItemRepository.save(inventoryItem);
+        }
       }
     }
 
@@ -244,7 +248,8 @@ export class InventoryPurchaseService {
       .where('pr.organization_id = :organizationId', { organizationId })
       .andWhere('pr.sub_organization_id = :subOrganizationId', {
         subOrganizationId,
-      });
+      })
+      .orderBy({ date_created: 'DESC' });
     return await query.getRawMany();
   }
 
@@ -278,15 +283,17 @@ export class InventoryPurchaseService {
       .addSelect('sr.overall_discount', 'overall_discount')
       .addSelect('sr.invoice_date', 'invoice_date')
       .addSelect('sr.due_date', 'due_date')
-      .addSelect('sr.sales_person', 'sales_person')
+      .addSelect('c.name', 'customer_name')
       .addSelect('sr.attachment', 'attachment')
       .addSelect('sr.terms', 'terms')
       .leftJoin('user', 'u', 'sr.created_by = u.id')
+      .leftJoin('customer', 'c', 'sr.customer_id = c.id')
       .leftJoin('sub_organization', 'so', 'sr.sub_organization_id = so.id')
       .where('sr.organization_id = :organizationId', { organizationId })
       .andWhere('sr.sub_organization_id = :subOrganizationId', {
         subOrganizationId,
-      });
+      })
+      .orderBy({ date_created: 'DESC' });
     if (state.length > 1) {
       query.andWhere('sr.state IN (:...state)', { state });
     } else if (state.length > 0) {
@@ -379,6 +386,7 @@ export class InventoryPurchaseService {
     const result = await this.SaleRequestRepository.createQueryBuilder('sr')
       .leftJoinAndSelect('sr.created_by', 'u')
       .leftJoinAndSelect('sr.subOrganization', 'so')
+      .leftJoinAndSelect('sr.customer', 'c')
       .select([
         'sr.id',
         'sr.state',
@@ -386,6 +394,8 @@ export class InventoryPurchaseService {
         'sr.sub_organization_id',
         'sr.created_by',
         'sr.sale_no',
+        'c.name',
+        'c',
         'u.name',
         'so.name',
         'sr.date_created',
@@ -405,7 +415,6 @@ export class InventoryPurchaseService {
         'sr.overall_discount',
         'sr.invoice_date',
         'sr.due_date',
-        'sr.sales_person',
         'sr.attachment',
         'sr.terms',
       ])

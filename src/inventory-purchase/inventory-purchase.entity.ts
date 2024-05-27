@@ -1,10 +1,17 @@
+import { Customer } from 'src/customer/customer.entity';
 import {
   Organization,
   SubOrganization,
   Vendor,
 } from 'src/organization/organization.entity';
 import { User } from 'src/user/user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity()
 export class PurchaseRequest {
@@ -46,7 +53,7 @@ export class PurchaseRequest {
   item_cost: number;
 
   @Column({
-    nullable: true, 
+    nullable: true,
     type: 'decimal',
     precision: 10,
     scale: 2,
@@ -236,7 +243,7 @@ export class SaleRequest {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    default: 0.0, 
+    default: 0.0,
   })
   item_cost: number;
 
@@ -327,8 +334,11 @@ export class SaleRequest {
     default: () => 'CURRENT_TIMESTAMP',
   })
   due_date: Date;
-  @Column({ nullable: true })
-  sales_person: number;
+
+  @ManyToOne(() => Customer, { nullable: true })
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
+
   @Column({ nullable: true })
   attachment: string;
   @Column({ nullable: true })
@@ -366,6 +376,9 @@ export class SaleItems {
   @Column({ nullable: true })
   @ManyToOne(() => Vendor)
   vendor_id: number;
+
+  @Column({ nullable: true })
+  is_custom: boolean;
 
   @Column()
   name: string;
@@ -441,6 +454,12 @@ export class InventoryItem {
   @ManyToOne(() => SaleRequest)
   sale_id: number;
 
+  @Column({ nullable: true })
+  purchase_no: number;
+
+  @Column({ nullable: true })
+  sale_no: number;
+
   @Column()
   stock_in: boolean;
 
@@ -463,7 +482,7 @@ export class InventoryItem {
   })
   unit_price: number;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
   @Column({
