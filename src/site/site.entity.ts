@@ -7,6 +7,9 @@ export class Site {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Column({nullable:true})
+    site_no: number;
+    
     @Column()
     name: string;
     @Column()

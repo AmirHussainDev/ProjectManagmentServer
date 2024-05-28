@@ -4,6 +4,7 @@ import {
   SubOrganization,
   Vendor,
 } from 'src/organization/organization.entity';
+import { Site } from 'src/site/site.entity';
 import { User } from 'src/user/user.entity';
 import {
   Entity,
@@ -377,9 +378,6 @@ export class SaleItems {
   @ManyToOne(() => Vendor)
   vendor_id: number;
 
-  @Column({ nullable: true })
-  is_custom: boolean;
-
   @Column()
   name: string;
 
@@ -459,6 +457,13 @@ export class InventoryItem {
 
   @Column({ nullable: true })
   sale_no: number;
+
+  @Column({ nullable: true })
+  @ManyToOne(() => Site)
+  site_id: number;
+
+  @Column({ nullable: true })
+  site_no: number;
 
   @Column()
   stock_in: boolean;

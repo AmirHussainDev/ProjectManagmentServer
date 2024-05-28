@@ -133,6 +133,9 @@ export class InventoryPurchaseService {
     products: SaleItems[];
   }): Promise<boolean> {
     // Update the sale request details in the SaleRequestRepository
+    const existingItem = await this.SaleRequestRepository.findOneBy({
+      id: itemDetails.details.id,
+    });
     await this.SaleRequestRepository.update(
       itemDetails.details.id,
       itemDetails.details,
@@ -142,7 +145,10 @@ export class InventoryPurchaseService {
     for (const product of itemDetails.products) {
       await this.SaleItemsRepository.update(product.id, product);
     }
-    if (itemDetails.details.state == 4) {
+    if (
+      existingItem.state !== itemDetails.details.state &&
+      itemDetails.details.state == 4
+    ) {
       const so = await this.SaleRequestRepository.findOne({
         where: {
           id: itemDetails.details.id,
@@ -177,6 +183,30 @@ export class InventoryPurchaseService {
           await this.inventoryItemRepository.save(inventoryItem);
         }
       }
+    }
+    if (!itemDetails.details.state) {
+      itemDetails.products.forEach((product) => {
+        // Initialize total returned quantity
+        let totalReturnedQty = 0;
+
+        // Sum up the quantities of returned items
+        product.return_details.forEach((returnItem) => {
+          totalReturnedQty += returnItem.qty;
+        });
+
+        // Calculate remaining quantity
+        const remainingQty = product.qty - totalReturnedQty;
+
+        this.inventoryItemRepository.update(
+          {
+            sale_id: itemDetails.details.id,
+            name: product.name,
+          },
+          {
+            qty: remainingQty,
+          },
+        );
+      });
     }
 
     // Return true indicating the update was successful
