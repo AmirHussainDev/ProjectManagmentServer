@@ -283,6 +283,55 @@ export class InventoryPurchaseService {
     return await query.getRawMany();
   }
 
+  async getSalesRequestsByCustomer(
+    organizationId: number,
+    subOrganizationId: number,
+    customer: number,
+  ): Promise<any[]> {
+    const query = this.SaleRequestRepository.createQueryBuilder('sr')
+      .select('sr.id', 'id')
+      .addSelect('sr.state', 'state')
+      .addSelect('sr.sale_no', 'sale_no')
+      .addSelect('sr.organization_id', 'organization_id')
+      .addSelect('sr.sub_organization_id', 'sub_organization_id')
+      .addSelect('sr.created_by', 'created_by')
+      .addSelect('u.name', 'created_by_name')
+      .addSelect('so.name', 'sub_organization_name')
+      .addSelect('sr.date_created', 'date_created')
+      .addSelect('sr.total', 'total')
+      .addSelect('sr.notes', 'notes')
+      .addSelect('sr.additional_cost', 'additional_cost')
+      .addSelect('sr.balance_to_be_paid_on', 'balance_to_be_paid_on')
+      .addSelect('sr.date_confirmation_on', 'date_confirmation_on')
+      .addSelect('sr.item_cost', 'item_cost')
+      .addSelect('sr.shipment_charges', 'shipment_charges')
+      .addSelect('sr.amount_paid', 'amount_paid')
+      .addSelect('sr.balance', 'balance')
+      .addSelect('sr.subject', 'subject')
+      .addSelect('sr.items_discount_total', 'items_discount_total')
+      .addSelect('sr.overall_discount_total', 'overall_discount_total')
+      .addSelect('sr.overall_discount', 'overall_discount')
+      .addSelect('sr.invoice_date', 'invoice_date')
+      .addSelect('sr.due_date', 'due_date')
+      .addSelect('c.name', 'customer_name')
+      .addSelect('sr.attachment', 'attachment')
+      .addSelect('sr.terms', 'terms')
+      .leftJoin('user', 'u', 'sr.created_by = u.id')
+      .leftJoin('customer', 'c', 'sr.customer_id = c.id')
+      .leftJoin('sub_organization', 'so', 'sr.sub_organization_id = so.id')
+      .where('sr.organization_id = :organizationId', { organizationId })
+      .andWhere('sr.sub_organization_id = :subOrganizationId', {
+        subOrganizationId,
+      })
+      .andWhere('sr.customer_id = :customer', {
+        customer,
+      })
+      .orderBy({ date_created: 'DESC' });
+    // console.log(query)
+    return query.getRawMany();
+    // return await this.PurchaseRequestRepository.query(query, [organizationId, subOrganizationId]);
+  }
+
   async getSalesRequests(
     organizationId: number,
     subOrganizationId: number,

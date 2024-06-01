@@ -120,6 +120,20 @@ export class InventoryPurchaseController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Get('sale-request-by-customer/:orgId/:subOrgId/:customerId')
+  getSaleRequestsByCustomer(
+    @Param('orgId') orgId: string,
+    @Param('subOrgId') subOrgId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    return this.inventoryPurcahseService.getSalesRequestsByCustomer(
+      parseInt(orgId),
+      parseInt(subOrgId),
+      parseInt(customerId),
+    );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Get('sale-request-by-id/:orgId/:subOrgId/:saleId')
   get_sale_request(
     @Param('orgId') orgId: string,

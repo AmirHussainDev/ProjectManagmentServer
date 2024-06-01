@@ -12,24 +12,24 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Controller('api/Customers')
 export class CustomerController {
-  constructor(private readonly userService: CustomerService) {}
+  constructor(private readonly customerService: CustomerService) {}
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
   createCustomer(@Body() body) {
-    return this.userService.createCustomer(body);
+    return this.customerService.createCustomer(body);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Put()
   updateCustomer(@Body() body) {
-    return this.userService.updateCustomer(body);
+    return this.customerService.updateCustomer(body);
   }
 
   @UseGuards(AuthGuard('local'))
   @Get()
   getAllCustomers() {
-    return this.userService.getAllCustomers();
+    return this.customerService.getAllCustomers();
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -38,7 +38,7 @@ export class CustomerController {
     @Param('orgId') orgId: string,
     @Param('subOrgId') subOrgId: string,
   ) {
-    return this.userService.findByOrganizationId(
+    return this.customerService.findByOrganizationId(
       parseInt(orgId),
       parseInt(subOrgId),
     );
