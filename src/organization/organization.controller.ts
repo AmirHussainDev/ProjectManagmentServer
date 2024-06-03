@@ -45,8 +45,8 @@ export class OrganizationController {
     }
 
     @Put('vendor/:orgId/:vendorId')
-    updateVendor(@Param('vendorId') vendorId: string, @Body() { name }: { name: string; }) {
-        return this.organizationService.updateVendor(vendorId, name);
+    updateVendor(@Param('vendorId') vendorId: string, @Body() body: { name: string; }) {
+        return this.organizationService.updateVendor(vendorId, body);
     }
 
     @Get('vendor-items/:orgId/:vendorId')
