@@ -49,6 +49,12 @@ export class User {
 
   @Column('boolean', { nullable: true })
   is_admin: boolean;
+  
+  @Column('boolean', { nullable: true })
+  is_contractor: boolean;
+
+  @Column('boolean', { nullable: true })
+  is_employee: boolean;
 
   @ManyToOne(() => RolePermissions)
   @JoinColumn({ name: 'role_id' })

@@ -3,18 +3,40 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
+import { Employee } from 'src/employee/employee.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
   ) {}
 
   async createUser(userObj: any): Promise<User> {
     const hash = bcrypt.hashSync(userObj.password, 10);
     const User = this.UserRepository.create({ ...userObj, password: hash });
-    return this.UserRepository.save(User) as any;
+    const user = (await this.UserRepository.save(User)) as any;
+
+    if (userObj.is_employee) {
+      const Employee = this.employeeRepository.create({
+        position: 'employee',
+        employee: user.id,
+        organization: user.organization_id,
+        subOrganization: user.sub_organization_id,
+        supervisor: user.reports_to,
+        salary: 0,
+        overtime: false,
+        isSalaryHourly: false,
+        workingHours: 8,
+        siginout_required: false,
+        details: '',
+        created_by: user.created_by_id,
+      });
+      await this.employeeRepository.save(Employee);
+    }
+    return user;
   }
   async changePassword(userObj: any): Promise<boolean> {
     const hash = bcrypt.hashSync(userObj.password, 10);
