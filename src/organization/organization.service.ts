@@ -39,15 +39,11 @@ export class OrganizationService {
     return this.OrganizationRepository.save(Organization);
   }
 
-  async createSubOrganization(
-    name: string,
-    organization_id: number,
-  ): Promise<SubOrganization> {
-    const Organization = this.SubOrganizationRepository.create({
-      name,
-      organization_id,
-    });
-    return this.SubOrganizationRepository.save(Organization);
+  async createSubOrganization(body): Promise<boolean> {
+    console.log(body)
+    const SubOrganization = this.SubOrganizationRepository.create(body);
+    await this.SubOrganizationRepository.save(SubOrganization);
+    return true;
   }
 
   async getAllOrganizations(): Promise<Organization[]> {

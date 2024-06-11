@@ -132,85 +132,92 @@ export class InventoryPurchaseService {
     details: SaleRequest;
     products: SaleItems[];
   }): Promise<boolean> {
-    // Update the sale request details in the SaleRequestRepository
-    const existingItem = await this.SaleRequestRepository.findOneBy({
-      id: itemDetails.details.id,
-    });
-    await this.SaleRequestRepository.update(
-      itemDetails.details.id,
-      itemDetails.details,
-    );
-
-    // Update each Sale item in the SaleItemsRepository
-    for (const product of itemDetails.products) {
-      await this.SaleItemsRepository.update(product.id, product);
-    }
-    if (
-      existingItem.state !== itemDetails.details.state &&
-      itemDetails.details.state == 4
-    ) {
-      const so = await this.SaleRequestRepository.findOne({
-        where: {
-          id: itemDetails.details.id,
-        },
-        relations: ['created_by', 'organization', 'subOrganization'],
+    try {
+      // Update the sale request details in the SaleRequestRepository
+      const existingItem = await this.SaleRequestRepository.findOneBy({
+        id: itemDetails.details.id,
       });
-      const products = await this.SaleItemsRepository.findByIds(
-        itemDetails.products.map((pr) => pr.id),
+      await this.SaleRequestRepository.update(
+        itemDetails.details.id,
+        itemDetails.details,
       );
-      for (const product of products) {
-        if (!product.isCustom) {
-          const inventory = {
-            organization_id: so.organization.id,
-            sub_organization_id: so.subOrganization.id,
-            sale_id: so.id,
-            sale_no: so.sale_no,
-            stock_in: false,
-            name: product.name,
-            vendor_id: product.vendor_id,
-            qty:
-              product.qty -
-              product.return_details.reduce(
-                (total, obj) => total + obj.qty * 1,
-                0,
-              ),
-            unit_price: product.unit_price,
-            description: so.subject,
-            total: product.total - this.sumReturnAmount(product.return_details),
-            date_created: new Date(),
-          };
-          const inventoryItem = this.inventoryItemRepository.create(inventory);
-          await this.inventoryItemRepository.save(inventoryItem);
+
+      // Update each Sale item in the SaleItemsRepository
+      for (const product of itemDetails.products) {
+        await this.SaleItemsRepository.update(product.id, product);
+      }
+      if (
+        existingItem.state !== itemDetails.details.state &&
+        itemDetails.details.state == 4
+      ) {
+        const so = await this.SaleRequestRepository.findOne({
+          where: {
+            id: itemDetails.details.id,
+          },
+          relations: ['created_by', 'organization', 'subOrganization'],
+        });
+        const products = await this.SaleItemsRepository.findByIds(
+          itemDetails.products.map((pr) => pr.id),
+        );
+        for (const product of products) {
+          if (!product.isCustom) {
+            const inventory = {
+              organization_id: so.organization.id,
+              sub_organization_id: so.subOrganization.id,
+              sale_id: so.id,
+              sale_no: so.sale_no,
+              stock_in: false,
+              name: product.name,
+              vendor_id: product.vendor_id,
+              qty:
+                product.qty -
+                product.return_details.reduce(
+                  (total, obj) => total + obj.qty * 1,
+                  0,
+                ),
+              unit_price: product.unit_price,
+              description: so.subject,
+              total:
+                product.total - this.sumReturnAmount(product.return_details),
+              date_created: new Date(),
+            };
+            const inventoryItem =
+              this.inventoryItemRepository.create(inventory);
+            await this.inventoryItemRepository.save(inventoryItem);
+          }
         }
       }
-    }
-    if (!itemDetails.details.state) {
-      itemDetails.products.forEach((product) => {
-        // Initialize total returned quantity
-        let totalReturnedQty = 0;
+      if (!itemDetails.details.state) {
+        itemDetails.products.forEach((product) => {
+          // Initialize total returned quantity
+          let totalReturnedQty = 0;
 
-        // Sum up the quantities of returned items
-        product.return_details.forEach((returnItem) => {
-          totalReturnedQty += returnItem.qty;
+          // Sum up the quantities of returned items
+          product.return_details.forEach((returnItem) => {
+            totalReturnedQty += returnItem.qty;
+          });
+          if (product.name) {
+            // Calculate remaining quantity
+            const remainingQty = product.qty - totalReturnedQty;
+
+            this.inventoryItemRepository.update(
+              {
+                sale_id: itemDetails.details.id,
+                name: product.name,
+              },
+              {
+                qty: remainingQty,
+              },
+            );
+          }
         });
+      }
 
-        // Calculate remaining quantity
-        const remainingQty = product.qty - totalReturnedQty;
-
-        this.inventoryItemRepository.update(
-          {
-            sale_id: itemDetails.details.id,
-            name: product.name,
-          },
-          {
-            qty: remainingQty,
-          },
-        );
-      });
+      // Return true indicating the update was successful
+      return true;
+    } catch (err) {
+      console.log(err);
     }
-
-    // Return true indicating the update was successful
-    return true;
   }
 
   sumReturnAmount(return_details: any[]): number {
@@ -270,7 +277,6 @@ export class InventoryPurchaseService {
       .addSelect('pr.invoice_date', 'invoice_date')
       .addSelect('pr.due_date', 'due_date')
       .addSelect('pr.sales_person', 'sales_person')
-      .addSelect('pr.attachment', 'attachment')
       .addSelect('pr.terms', 'terms')
       .leftJoin('user', 'u', 'pr.created_by = u.id')
       .leftJoin('vendor', 'v', 'pr.vendor_id = v.id')
@@ -314,7 +320,6 @@ export class InventoryPurchaseService {
       .addSelect('sr.invoice_date', 'invoice_date')
       .addSelect('sr.due_date', 'due_date')
       .addSelect('c.name', 'customer_name')
-      .addSelect('sr.attachment', 'attachment')
       .addSelect('sr.terms', 'terms')
       .leftJoin('user', 'u', 'sr.created_by = u.id')
       .leftJoin('customer', 'c', 'sr.customer_id = c.id')
@@ -363,7 +368,6 @@ export class InventoryPurchaseService {
       .addSelect('sr.invoice_date', 'invoice_date')
       .addSelect('sr.due_date', 'due_date')
       .addSelect('c.name', 'customer_name')
-      .addSelect('sr.attachment', 'attachment')
       .addSelect('sr.terms', 'terms')
       .leftJoin('user', 'u', 'sr.created_by = u.id')
       .leftJoin('customer', 'c', 'sr.customer_id = c.id')

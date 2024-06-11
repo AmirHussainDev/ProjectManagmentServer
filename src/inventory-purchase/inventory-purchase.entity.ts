@@ -141,8 +141,8 @@ export class PurchaseRequest {
   due_date: Date;
   @Column({ nullable: true })
   sales_person: number;
-  @Column({ nullable: true })
-  attachment: string;
+  @Column('jsonb', { nullable: true })
+  attachment: any;
   @Column({ nullable: true })
   terms: string;
   @Column({
@@ -340,8 +340,8 @@ export class SaleRequest {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
-  @Column({ nullable: true })
-  attachment: string;
+  @Column('jsonb', { nullable: true })
+  attachment: any;
   @Column({ nullable: true })
   terms: string;
   @Column({

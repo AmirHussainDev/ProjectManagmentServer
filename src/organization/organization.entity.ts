@@ -26,6 +26,9 @@ export class SubOrganization {
   @Column()
   name: string;
 
+  @Column({ nullable: true })
+  filename: string;
+
   @Column()
   organization_id: number;
 }

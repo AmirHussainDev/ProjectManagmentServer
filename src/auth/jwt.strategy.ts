@@ -6,14 +6,14 @@ import { AuthService } from './auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(private authService: AuthService) {
-        super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: 'Veins-Login-Secret',
-        });
-    }
+  constructor(private authService: AuthService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: 'Veins-Login-Secret',
+    });
+  }
 
-    async validate(payload: any) {
-        return payload.exp > payload.iat;
-    }
+  async validate(payload: any) {
+    return payload.exp > payload.iat;
+  }
 }

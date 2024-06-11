@@ -165,8 +165,8 @@ export class SiteContracts {
     @JoinColumn({ name: 'created_by_id' })
     created_by: User;
 
-    @Column({ nullable: true })
-    attachment: string;
+    @Column('jsonb', { nullable: true })
+    attachment: any;
 
     @Column({ nullable: true })
     terms: string;
