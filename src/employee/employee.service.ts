@@ -69,7 +69,11 @@ export class EmployeeService {
     // console.log('here')
     const siteContracts = await this.employeeRepository
       .createQueryBuilder('em')
+      .leftJoin('em.employee', 'emp')
+      .leftJoin('em.supervisor', 'sup')
       .select('em.id', 'id')
+      .addSelect('emp.name', 'employeeName')
+      .addSelect('sup.name', 'supervisorName')
       .addSelect('em.position', 'position')
       .addSelect('em.employee_id', 'employee')
       .addSelect('em.supervisor_id', 'supervisor')

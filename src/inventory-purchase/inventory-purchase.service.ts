@@ -529,14 +529,96 @@ export class InventoryPurchaseService {
     organizationId: number,
     subOrganizationId: number,
   ): Promise<any[]> {
-    const query = `
-      SELECT * FROM get_inventory_items($1, $2)
-    `;
-    return await this.PurchaseRequestRepository.query(query, [
-      organizationId,
-      subOrganizationId,
-    ]);
+    const inventoryItems: any = await this.inventoryItemRepository.find({
+      where: {
+        organization_id: organizationId,
+        sub_organization_id: subOrganizationId,
+      },
+      relations: ['vendor'], // Assuming you have relations defined in your entity
+    });
+  
+    // Group by item name and vendor name
+    const groupedData = inventoryItems.reduce((acc, item) => {
+      const key = `${item.name}-${item.vendor.name}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(item);
+      return acc;
+    }, {});
+  
+    const result = Object.keys(groupedData).map((key) => {
+      const items = groupedData[key];
+  
+      // Filter items where stock_in is true
+      const stockInItems = items.filter((item) => item.stock_in);
+  
+      // Get the latest unit price where stock_in is true
+      const latestStockInItem = stockInItems.reduce((latest, item) => {
+        return new Date(item.date_created) > new Date(latest.date_created)
+          ? item
+          : latest;
+      }, stockInItems[0]);
+  
+      // Calculate the total quantity sold
+      const totalQuantitySold = items
+        .filter((item) => !item.stock_in)
+        .reduce((acc, item) => acc + item.qty, 0);
+  
+      // Apply FIFO rule to calculate the total value and quantity of remaining items
+      const remainingItems = [...stockInItems];
+      let remainingQtyToRemove = totalQuantitySold;
+      while (remainingQtyToRemove > 0 && remainingItems.length > 0) {
+        const currentItem = remainingItems[0];
+        if (currentItem.qty > remainingQtyToRemove) {
+          currentItem.qty -= remainingQtyToRemove;
+          remainingQtyToRemove = 0;
+        } else {
+          remainingQtyToRemove -= currentItem.qty;
+          remainingItems.shift(); // Remove the item completely
+        }
+      }
+  
+      // Calculate the average unit price of remaining items
+      const totalRemainingValue = remainingItems.reduce((acc, item) => {
+        return acc + item.qty * parseFloat(item.unit_price);
+      }, 0);
+      const totalRemainingQty = remainingItems.reduce(
+        (acc, item) => acc + item.qty,
+        0,
+      );
+      const averageUnitPrice =
+        totalRemainingQty > 0
+          ? (totalRemainingValue / totalRemainingQty).toFixed(2)
+          : '0.00';
+  
+      return {
+        item_name: items[0].name,
+        vendor_name: items[0].vendor.name,
+        latest_unit_price: latestStockInItem.unit_price,
+        qty: totalRemainingQty,
+        avg_unit_price: averageUnitPrice,
+      };
+    });
+  
+    return result;
   }
+  
+  
+
+  private calculateAvailableUnitPrice(item: InventoryItem): number {
+    // Implement your logic here to calculate available unit price
+    // Example logic (modify based on your actual requirements):
+    const totalStockValue = item.qty * item.unit_price;
+    const totalStockQty = item.qty;
+
+    if (totalStockQty > 0) {
+      return totalStockValue / totalStockQty;
+    } else {
+      return 0;
+    }
+  
+}
 
   async getInventoryItemDetails(
     organization_id: number,

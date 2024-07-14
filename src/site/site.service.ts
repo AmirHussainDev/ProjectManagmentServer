@@ -147,7 +147,7 @@ export class SiteService {
         site_no: site.site_no,
         stock_in: false,
         name: expense.name,
-        vendor_id: inventoryExistingItem.vendor_id,
+        vendor_id: inventoryExistingItem.vendor.id,
         isSiteBased: true,
         qty: expense.quantity,
         unit_price: inventoryExistingItem.unit_price,
