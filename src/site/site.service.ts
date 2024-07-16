@@ -11,6 +11,8 @@ import {
   SiteContractorPayments,
 } from './site.entity';
 import { InventoryItem } from 'src/inventory-purchase/inventory-purchase.entity';
+import { SiteStatisticsDto } from './site.interface.dto';
+import { error } from 'console';
 
 @Injectable()
 export class SiteService {
@@ -49,6 +51,90 @@ export class SiteService {
     return this.SiteRepository.find();
   }
 
+  async getSiteStatistics(id: number): Promise<SiteStatisticsDto> {
+    try {
+      const site = await this.SiteRepository.findOneBy({ id });
+
+      if (!site) {
+        throw new Error('Site not found');
+      }
+
+      const siteTotalBudget = parseFloat(site.budget);
+
+      const siteExpensesSum = await this.siteExpensesRepository
+        .createQueryBuilder('expense')
+        .select('SUM(expense.amount)', 'sum')
+        .where('expense.site_id = :siteId', { siteId: id })
+        .getRawOne();
+
+      const siteGeneralExpensesSum = await this.siteExpensesRepository
+        .createQueryBuilder('expense')
+        .select('SUM(expense.amount::int)', 'sum')
+        .where('expense.site_id = :siteId AND expense.is_general = true', {
+          siteId: id,
+        })
+        .getRawOne();
+
+      const siteContractPaymentsSum =
+        await this.siteContractorPaymentsRepository
+          .createQueryBuilder('contract_payment')
+          .select('SUM(contract_payment.amount::int)', 'sum')
+          .where('contract_payment.site_id = :siteId', { siteId: id })
+          .getRawOne();
+
+      const siteOwnerPaymentsSum = await this.siteOwnerPaymentsRepository
+        .createQueryBuilder('owner_payment')
+        .select('SUM(owner_payment.amount::int)', 'sum')
+        .where('owner_payment.site_id = :siteId', { siteId: id })
+        .getRawOne();
+
+      return {
+        siteId: site.id,
+        siteName: site.name,
+        siteTotalBudget,
+        siteExpensesSum: parseFloat(siteExpensesSum.sum) || 0,
+        siteGeneralExpensesSum: parseFloat(siteGeneralExpensesSum.sum) || 0,
+        siteContractPaymentsSum: parseFloat(siteContractPaymentsSum.sum) || 0,
+        siteOwnerPaymentsSum: parseFloat(siteOwnerPaymentsSum.sum) || 0,
+      };
+    } catch (err) {
+      throw error(err);
+    }
+  }
+
+  async getAllSitesStatistics(
+    organization_id: number,
+    sub_organization_id: number,
+  ): Promise<SiteStatisticsDto[]> {
+    try {
+      const sitesQuery = this.SiteRepository.createQueryBuilder('site');
+
+      if (organization_id) {
+        sitesQuery.andWhere('site.organization_id = :organization_id', {
+          organization_id,
+        });
+      }
+
+      if (sub_organization_id) {
+        sitesQuery.andWhere('site.sub_organization_id = :sub_organization_id', {
+          sub_organization_id,
+        });
+      }
+      sitesQuery.andWhere('site.state = 4', {
+        sub_organization_id,
+      });
+      const sites = await sitesQuery.getMany();
+
+      const statisticsPromises = sites.map((site) =>
+        this.getSiteStatistics(site.id),
+      );
+      const allSitesStatistics = await Promise.all(statisticsPromises);
+
+      return allSitesStatistics;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }
   async findBySiteId(
     organization_id: number,
     sub_organization_id: number,

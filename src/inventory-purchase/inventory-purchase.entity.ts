@@ -374,9 +374,9 @@ export class SaleItems {
   @JoinColumn({ name: 'sale_id' })
   sale: SaleRequest;
 
-  @Column({ nullable: true })
-  @ManyToOne(() => Vendor)
-  vendor_id: number;
+  @ManyToOne(() => Vendor, { nullable: true })
+  @JoinColumn({ name: 'vendor_id' })
+  vendor: Vendor;
 
   @Column()
   name: string;

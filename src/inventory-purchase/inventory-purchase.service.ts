@@ -6,8 +6,9 @@ import {
   SaleItems,
   SaleRequest,
 } from './inventory-purchase.entity';
-import { Raw, Repository } from 'typeorm';
+import { In, Raw, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { VendorItem } from 'src/organization/organization.entity';
 
 @Injectable()
 export class InventoryPurchaseService {
@@ -22,6 +23,8 @@ export class InventoryPurchaseService {
     private readonly SaleItemsRepository: Repository<SaleItems>,
     @InjectRepository(InventoryItem)
     private readonly inventoryItemRepository: Repository<InventoryItem>,
+    @InjectRepository(VendorItem)
+    private readonly VendorItemRepository: Repository<VendorItem>,
   ) {}
 
   async createPurchaseRequest(itemDetails: {
@@ -47,6 +50,13 @@ export class InventoryPurchaseService {
       purchase: resp,
     }));
     this.PurchaseItemsRepository.save(itemDetails.products);
+    const customProducts = itemDetails.products
+      .filter((prod) => prod.isCustom)
+      .map((item) => ({
+        name: item.name,
+        vendor_id: itemDetails.details.vendor,
+      })) as unknown as VendorItem[];
+    this.VendorItemRepository.save(customProducts);
     return resp;
   }
 
@@ -78,26 +88,24 @@ export class InventoryPurchaseService {
         },
       });
       for (const product of products) {
-        if (!product.isCustom) {
-          const inventory = {
-            organization_id: po.organization.id,
-            sub_organization_id: po.subOrganization.id,
-            purchase_id: po.id,
-            purchase_no: po.purchase_no,
-            stock_in: true,
-            name: product.name,
-            vendor_id: po.vendor.id,
-            isSiteBased: po.isSiteBased,
-            site_ids: po.site_ids,
-            qty: product.qty,
-            unit_price: product.unit_price,
-            description: po.subject,
-            total: product.total,
-            date_created: new Date(),
-          };
-          const inventoryItem = this.inventoryItemRepository.create(inventory);
-          await this.inventoryItemRepository.save(inventoryItem);
-        }
+        const inventory = {
+          organization_id: po.organization.id,
+          sub_organization_id: po.subOrganization.id,
+          purchase_id: po.id,
+          purchase_no: po.purchase_no,
+          stock_in: true,
+          name: product.name,
+          vendor: po.vendor,
+          isSiteBased: po.isSiteBased,
+          site_ids: po.site_ids,
+          qty: product.qty,
+          unit_price: product.unit_price,
+          description: po.subject,
+          total: product.total,
+          date_created: new Date(),
+        };
+        const inventoryItem = this.inventoryItemRepository.create(inventory);
+        await this.inventoryItemRepository.save(inventoryItem);
       }
     }
     // Return true indicating the update was successful
@@ -156,9 +164,10 @@ export class InventoryPurchaseService {
           },
           relations: ['created_by', 'organization', 'subOrganization'],
         });
-        const products = await this.SaleItemsRepository.findByIds(
-          itemDetails.products.map((pr) => pr.id),
-        );
+        const products = await this.SaleItemsRepository.find({
+          where: { id: In(itemDetails.products.map((pr) => pr.id)) },
+          relations: ['vendor'],
+        });
         for (const product of products) {
           if (!product.isCustom) {
             const inventory = {
@@ -168,7 +177,7 @@ export class InventoryPurchaseService {
               sale_no: so.sale_no,
               stock_in: false,
               name: product.name,
-              vendor_id: product.vendor_id,
+              vendor: product.vendor,
               qty:
                 product.qty -
                 product.return_details.reduce(
@@ -536,7 +545,7 @@ export class InventoryPurchaseService {
       },
       relations: ['vendor'], // Assuming you have relations defined in your entity
     });
-  
+
     // Group by item name and vendor name
     const groupedData = inventoryItems.reduce((acc, item) => {
       const key = `${item.name}-${item.vendor.name}`;
@@ -546,25 +555,25 @@ export class InventoryPurchaseService {
       acc[key].push(item);
       return acc;
     }, {});
-  
+
     const result = Object.keys(groupedData).map((key) => {
       const items = groupedData[key];
-  
+
       // Filter items where stock_in is true
       const stockInItems = items.filter((item) => item.stock_in);
-  
+
       // Get the latest unit price where stock_in is true
       const latestStockInItem = stockInItems.reduce((latest, item) => {
         return new Date(item.date_created) > new Date(latest.date_created)
           ? item
           : latest;
       }, stockInItems[0]);
-  
+
       // Calculate the total quantity sold
       const totalQuantitySold = items
         .filter((item) => !item.stock_in)
         .reduce((acc, item) => acc + item.qty, 0);
-  
+
       // Apply FIFO rule to calculate the total value and quantity of remaining items
       const remainingItems = [...stockInItems];
       let remainingQtyToRemove = totalQuantitySold;
@@ -578,7 +587,7 @@ export class InventoryPurchaseService {
           remainingItems.shift(); // Remove the item completely
         }
       }
-  
+
       // Calculate the average unit price of remaining items
       const totalRemainingValue = remainingItems.reduce((acc, item) => {
         return acc + item.qty * parseFloat(item.unit_price);
@@ -591,8 +600,9 @@ export class InventoryPurchaseService {
         totalRemainingQty > 0
           ? (totalRemainingValue / totalRemainingQty).toFixed(2)
           : '0.00';
-  
+
       return {
+        ...items[0],
         item_name: items[0].name,
         vendor_name: items[0].vendor.name,
         latest_unit_price: latestStockInItem.unit_price,
@@ -600,11 +610,41 @@ export class InventoryPurchaseService {
         avg_unit_price: averageUnitPrice,
       };
     });
-  
+
     return result;
   }
-  
-  
+
+  async getInventoryStats(
+    organizationId: number,
+    subOrganizationId: number,
+  ): Promise<any> {
+    const inventoryData = await this.getInventory(
+      organizationId,
+      subOrganizationId,
+    );
+
+    let currentStock = 0;
+    let maxSales = 0;
+    let productsSold = 0;
+    let currentStockValue = 0;
+
+    inventoryData.forEach((item) => {
+      const totalValue = item.qty * parseFloat(item.avg_unit_price);
+
+      currentStock += item.qty;
+      currentStockValue += totalValue;
+
+      maxSales += parseFloat(item.latest_unit_price) * item.qty;
+      productsSold += item.qty;
+    });
+
+    return {
+      currentStock,
+      maxSales,
+      productsSold,
+      currentStockValue,
+    };
+  }
 
   private calculateAvailableUnitPrice(item: InventoryItem): number {
     // Implement your logic here to calculate available unit price
@@ -617,8 +657,7 @@ export class InventoryPurchaseService {
     } else {
       return 0;
     }
-  
-}
+  }
 
   async getInventoryItemDetails(
     organization_id: number,
