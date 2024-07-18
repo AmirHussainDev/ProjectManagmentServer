@@ -53,7 +53,7 @@ export class InventoryPurchaseService {
     const customProducts = itemDetails.products
       .filter((prod) => prod.isCustom)
       .map((item) => ({
-        name: item.name,
+        name: item.name.trim(),
         vendor_id: itemDetails.details.vendor,
       })) as unknown as VendorItem[];
     this.VendorItemRepository.save(customProducts);
@@ -94,7 +94,7 @@ export class InventoryPurchaseService {
           purchase_id: po.id,
           purchase_no: po.purchase_no,
           stock_in: true,
-          name: product.name,
+          name: product.name.trim(),
           vendor: po.vendor,
           isSiteBased: po.isSiteBased,
           site_ids: po.site_ids,

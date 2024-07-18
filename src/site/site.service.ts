@@ -215,13 +215,16 @@ export class SiteService {
 
   async createSiteExpenses(details: SiteExpenses) {
     const expense = this.siteExpensesRepository.create(details);
-    const inventoryExistingItem = await this.inventoryItemRepository.findOneBy({
-      purchase_id: details.purchase_id,
-      name: expense.name,
+    const inventoryExistingItem = await this.inventoryItemRepository.findOne({
+      where: {
+        purchase_id: details.purchase_id,
+        name: expense.name,
+      },
+      relations: ['vendor'],
     });
     const site = await this.SiteRepository.findOne({
       where: { id: details.site.id },
-      relations: ['created_by', 'organization', 'subOrganization'],
+      relations: ['organization', 'subOrganization'],
     });
     const resp = await this.siteExpensesRepository.save(expense);
 
@@ -233,7 +236,7 @@ export class SiteService {
         site_no: site.site_no,
         stock_in: false,
         name: expense.name,
-        vendor_id: inventoryExistingItem.vendor.id,
+        vendor: inventoryExistingItem.vendor,
         isSiteBased: true,
         qty: expense.quantity,
         unit_price: inventoryExistingItem.unit_price,
@@ -263,7 +266,6 @@ export class SiteService {
         organization: { id: organization_id },
         subOrganization: { id: sub_organization_id },
       },
-      relations: ['created_by', 'organization', 'subOrganization', 'site'],
       order: { id: 'ASC' }, // Include relations if needed
     });
     return siteExpenses;
@@ -291,7 +293,6 @@ export class SiteService {
         organization: { id: organization_id },
         subOrganization: { id: sub_organization_id },
       },
-      relations: ['created_by', 'organization', 'subOrganization', 'site'],
       order: { id: 'ASC' }, // Include relations if needed
     });
     return siteOwnerPayments;
@@ -343,13 +344,6 @@ export class SiteService {
         subOrganization: { id: sub_organization_id },
         contract: { id: contract_id },
       },
-      relations: [
-        'created_by',
-        'organization',
-        'subOrganization',
-        'site',
-        'contract',
-      ],
       order: { id: 'ASC' }, // Include relations if needed
     });
     return siteOwnerPayments;
@@ -374,13 +368,6 @@ export class SiteService {
         subOrganization: { id: sub_organization_id },
         contract: { id: contract_id },
       },
-      relations: [
-        'created_by',
-        'organization',
-        'subOrganization',
-        'site',
-        'contract',
-      ],
       order: { id: 'ASC' }, // Include relations if needed
     });
     return siteOwnerPayments;

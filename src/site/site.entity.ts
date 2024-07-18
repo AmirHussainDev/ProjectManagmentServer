@@ -7,9 +7,9 @@ export class Site {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({nullable:true})
+    @Column({ nullable: true })
     site_no: number;
-    
+
     @Column()
     name: string;
     @Column()
@@ -199,13 +199,15 @@ export class SiteContracts {
     with_material: boolean;
 
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
-    payment_schedule: number;
+    amount_per_unit: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
-    amount_per_schedule: number;
+    @Column({ nullable: true })
+    no_of_units: number;
+    @Column({ nullable: true })
+    include_weekends: boolean;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
-    amount_per_day: number;
+
+
 }
 
 @Entity()
