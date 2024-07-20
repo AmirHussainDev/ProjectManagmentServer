@@ -15,12 +15,12 @@ import { AuthController } from './auth.controller';
     PassportModule,
     JwtModule.register({
       secret: 'Veins-Login-Secret',
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '8h' },
     }),
-    JwtModule
+    JwtModule,
   ],
-  providers: [AuthService,UserService, LocalStrategy, JwtStrategy],
-  controllers:[AuthController],
+  providers: [AuthService, UserService, LocalStrategy, JwtStrategy],
+  controllers: [AuthController],
   exports: [AuthService],
 })
 export class AuthModule {}
