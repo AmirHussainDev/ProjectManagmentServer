@@ -89,6 +89,9 @@ export class PurchaseRequest {
   })
   amount_paid: number;
 
+  @Column('jsonb', { nullable: true })
+  payment_history: any;
+
   @Column({
     nullable: true,
     type: 'decimal',

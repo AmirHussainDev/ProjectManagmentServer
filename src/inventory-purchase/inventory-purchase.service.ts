@@ -25,7 +25,7 @@ export class InventoryPurchaseService {
     private readonly inventoryItemRepository: Repository<InventoryItem>,
     @InjectRepository(VendorItem)
     private readonly VendorItemRepository: Repository<VendorItem>,
-  ) {}
+  ) { }
 
   async createPurchaseRequest(itemDetails: {
     details: PurchaseRequest;
@@ -75,7 +75,14 @@ export class InventoryPurchaseService {
       await this.PurchaseItemsRepository.update(product.id, product);
     }
 
-    if (itemDetails.details.state == 4) {
+    if (
+      (itemDetails.details.state == 4 &&
+        itemDetails.details.payment_history.length &&
+        itemDetails.details.payment_history.length === 1) ||
+      (itemDetails.details.state == 2 &&
+        itemDetails.details.payment_history.length &&
+        itemDetails.details.payment_history.length === 1)
+    ) {
       const po = await this.PurchaseRequestRepository.findOne({
         where: {
           id: itemDetails.details.id,
@@ -418,6 +425,7 @@ export class InventoryPurchaseService {
         'v.filename',
         'v.id',
         'pr.created_by',
+        'pr.payment_history',
         'u.name',
         'so.name',
         'pr.date_created',
@@ -666,14 +674,14 @@ export class InventoryPurchaseService {
   ): Promise<InventoryItem[]> {
     return name
       ? this.inventoryItemRepository.findBy({
-          organization_id,
-          sub_organization_id,
-          name,
-        })
+        organization_id,
+        sub_organization_id,
+        name,
+      })
       : this.inventoryItemRepository.findBy({
-          organization_id,
-          sub_organization_id,
-        });
+        organization_id,
+        sub_organization_id,
+      });
   }
 
   async getInventoryBySite(
