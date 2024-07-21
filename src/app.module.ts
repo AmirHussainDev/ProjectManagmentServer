@@ -53,7 +53,7 @@ import { CustomerModule } from './customer/customer.module';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'postgres',
+      password: 'P@kistan5444004',
       database: 'postgres',
       entities: [
         User,
