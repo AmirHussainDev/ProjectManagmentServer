@@ -17,14 +17,13 @@ export class CustomerService {
   async updateCustomer(userObj: any): Promise<Customer> {
     // Update the user
     await this.CustomerRepository.update(
-      { id: userObj.id, organization: userObj.organization_id },
+      { id: userObj.id },
       userObj,
     );
 
     // Find and return the updated user
     const updatedCustomer = await this.CustomerRepository.findOneBy({
       id: userObj.id,
-      organization: userObj.organization_id,
     });
     if (!updatedCustomer) {
       // Handle case where user is not found after update

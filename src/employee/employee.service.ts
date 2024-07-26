@@ -80,7 +80,8 @@ export class EmployeeService {
       .addSelect('em.salary', 'salary')
       .addSelect('em.overtime', 'overtime')
       .addSelect('em.workingHours', 'workingHours')
-      .addSelect('em.workingHours', 'isSalaryHourly')
+      .addSelect('em.isSalaryHourly', 'isSalaryHourly')
+      .addSelect('em.details', 'details')
       .addSelect('em.siginout_required', 'siginout_required')
       .where('em.organization_id = :organizationId', { organizationId })
       .andWhere('em.sub_organization_id = :subOrganizationId', {
