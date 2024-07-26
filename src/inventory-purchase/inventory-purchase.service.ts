@@ -204,19 +204,23 @@ export class InventoryPurchaseService {
         }
       }
       if (!itemDetails.details.state) {
-        itemDetails.products.forEach((product) => {
+        const products = await this.SaleItemsRepository.find({
+          where: { id: In(itemDetails.products.map((pr) => pr.id)) },
+          relations: ['vendor'],
+        });
+        products.forEach(async (product) => {
           // Initialize total returned quantity
           let totalReturnedQty = 0;
 
           // Sum up the quantities of returned items
           product.return_details.forEach((returnItem) => {
-            totalReturnedQty += returnItem.qty;
+            totalReturnedQty += Number(returnItem.qty);
           });
           if (product.name) {
             // Calculate remaining quantity
             const remainingQty = product.qty - totalReturnedQty;
 
-            this.inventoryItemRepository.update(
+            await this.inventoryItemRepository.update(
               {
                 sale_id: itemDetails.details.id,
                 name: product.name,

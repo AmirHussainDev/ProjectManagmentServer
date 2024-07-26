@@ -59,6 +59,16 @@ export class OrganizationController {
     return this.organizationService.createSubOrganization(body);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Put('subOrg')
+  updateSubOrganization(
+    @Body()
+    body,
+    // @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.organizationService.updateSubOrganization(body);
+  }
+
   @Get('vendor/:orgId')
   getVendors(@Param('orgId') orgId: string) {
     return this.organizationService.getVendors(parseInt(orgId));
@@ -74,12 +84,14 @@ export class OrganizationController {
     return this.organizationService.createVendor(parseInt(orgId), name, file);
   }
 
+  @UseInterceptors(FileInterceptor('file'))
   @Put('vendor/:orgId/:vendorId')
   updateVendor(
     @Param('vendorId') vendorId: string,
     @Body() body: { name: string },
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.organizationService.updateVendor(vendorId, body);
+    return this.organizationService.updateVendor(vendorId, body,file);
   }
 
   @Get('vendor-items/:orgId/:vendorId')

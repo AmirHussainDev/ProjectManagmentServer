@@ -22,7 +22,7 @@ export class OrganizationService {
     private readonly VendorRepository: Repository<Vendor>,
     @InjectRepository(VendorItem)
     private readonly VendorItemRepository: Repository<VendorItem>,
-  ) {}
+  ) { }
 
   async createOrganization(
     name: string,
@@ -42,6 +42,16 @@ export class OrganizationService {
   async createSubOrganization(body): Promise<boolean> {
     console.log(body)
     const SubOrganization = this.SubOrganizationRepository.create(body);
+    await this.SubOrganizationRepository.save(SubOrganization);
+    return true;
+  }
+  async updateSubOrganization(body:any): Promise<boolean> {
+    console.log(body)
+    const SubOrganization = this.SubOrganizationRepository.create(body);
+    await this.SubOrganizationRepository.update(
+      { id: parseInt(body.id)},
+      { ...body },
+    );
     await this.SubOrganizationRepository.save(SubOrganization);
     return true;
   }
@@ -103,20 +113,58 @@ export class OrganizationService {
   async updateVendor(
     vendor_id: string,
     { name, email, address, contact_no }: any,
+    file,
   ): Promise<Vendor> {
-    await this.VendorRepository.update(
-      { id: parseInt(vendor_id) },
-      { name, email, address, contact_no },
-    );
-    // Find and return the updated user
     const updatedVendor = await this.VendorRepository.findOneBy({
       id: parseInt(vendor_id),
     });
+
     if (!updatedVendor) {
-      // Handle case where user is not found after update
-      throw new Error('vendor not found after update');
+      throw new Error('Vendor not found');
     }
-    return updatedVendor;
+
+    let uploadDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+
+    // Delete the existing file if present
+    if (updatedVendor.filename) {
+      const existingFilePath = path.join(uploadDir, updatedVendor.filename);
+      if (fs.existsSync(existingFilePath)) {
+        fs.unlinkSync(existingFilePath);
+      }
+    }
+    let filePath = '';
+    let fileName = '';
+    uploadDir = path.join('', '..', 'uploads');
+
+    if (file) {
+      fileName = `${Date.now()}-${file.originalname}`;
+      filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+    }
+    let body = { name, email, address, contact_no, filename: fileName }
+    if (fileName) {
+      body = { ...body, filename: fileName }
+    }
+    await this.VendorRepository.update(
+      { id: parseInt(vendor_id) },
+      body
+    );
+
+    // Find and return the updated vendor
+    const updatedVendorAfterSave = await this.VendorRepository.findOneBy({
+      id: parseInt(vendor_id),
+    });
+
+    if (!updatedVendorAfterSave) {
+      // Handle case where vendor is not found after update
+      throw new Error('Vendor not found after update');
+    }
+
+    return updatedVendorAfterSave;
   }
 
   async getVendorItems(vendor_id: number): Promise<VendorItem[]> {
