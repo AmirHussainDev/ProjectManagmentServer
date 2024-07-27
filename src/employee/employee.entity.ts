@@ -53,10 +53,10 @@ export class Employee {
   @Column({ nullable: true })
   workingHours: number;
 
-  @Column()
+  @Column({ nullable: true })
   siginout_required: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   details: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
