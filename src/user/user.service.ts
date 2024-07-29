@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { Employee } from 'src/employee/employee.entity';
+import { SubOrganization } from 'src/organization/organization.entity';
 
 @Injectable()
 export class UserService {
@@ -12,7 +13,7 @@ export class UserService {
     private readonly UserRepository: Repository<User>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-  ) {}
+  ) { }
 
   async createUser(userObj: any): Promise<User> {
     const hash = bcrypt.hashSync(userObj.password, 10);
@@ -50,6 +51,7 @@ export class UserService {
   }
   async updateUser(userObj: any): Promise<User> {
     // Update the user
+    const previousUser: User = await this.UserRepository.findOneBy({ id: userObj.id })
     await this.UserRepository.update(
       { id: userObj.id, organization_id: userObj.organization_id },
       {
@@ -57,6 +59,12 @@ export class UserService {
         reports_to: userObj.reports_to,
       },
     );
+
+    if (previousUser.sub_organization_id !== userObj.sub_organization_id) {
+      this.employeeRepository.update({ employee: userObj.id },{
+        subOrganization:userObj.sub_organization_id
+      })
+    }
 
     // Find and return the updated user
     const updatedUser = await this.UserRepository.findOneBy({

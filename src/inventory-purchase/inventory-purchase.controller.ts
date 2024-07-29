@@ -97,11 +97,12 @@ export class InventoryPurchaseController {
   getPurchaseRequestsByFilter(
     @Param('orgId') orgId: string,
     @Param('subOrgId') subOrgId: string,
-    @Param('state') state: string,
+    @Query('state') state: string[],
   ) {
     return this.inventoryPurcahseService.getPurchaseRequests(
       parseInt(orgId),
       parseInt(subOrgId),
+      state
     );
   }
 

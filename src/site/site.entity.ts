@@ -21,7 +21,7 @@ export class Site {
 
     @Column()
     address: string;
-    @Column()
+    @Column({nullable:true})
     details: string;
 
     @ManyToOne(type => User)
@@ -33,6 +33,12 @@ export class Site {
 
     @Column()
     state: number;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    site_start_date: Date;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    site_end_date: Date;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date_created: Date;
@@ -203,9 +209,12 @@ export class SiteContracts {
 
     @Column({ nullable: true })
     no_of_units: number;
+
     @Column({ nullable: true })
     include_weekends: boolean;
 
+    @Column({ nullable: true })
+    details: string;
 
 
 }

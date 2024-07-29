@@ -268,6 +268,7 @@ export class InventoryPurchaseService {
   async getPurchaseRequests(
     organizationId: number,
     subOrganizationId: number,
+    state: string[]=[],
   ): Promise<any[]> {
     const query = this.PurchaseRequestRepository.createQueryBuilder('pr')
       .select('pr.id', 'id')
@@ -306,6 +307,11 @@ export class InventoryPurchaseService {
         subOrganizationId,
       })
       .orderBy({ date_created: 'DESC' });
+      if (state.length > 1) {
+        query.andWhere('pr.state IN (:...state)', { state });
+      } else if (state.length > 0) {
+        query.andWhere('pr.state = :state', { state });
+      }
     return await query.getRawMany();
   }
 

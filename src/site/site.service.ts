@@ -40,7 +40,7 @@ export class SiteService {
 
     @InjectRepository(SiteContractorPayments)
     private readonly siteContractorPaymentsRepository: Repository<SiteContractorPayments>,
-  ) {}
+  ) { }
 
   async createSite(siteDetails: Site): Promise<Site> {
     const Site = this.SiteRepository.create({ ...siteDetails });
@@ -56,7 +56,7 @@ export class SiteService {
       const site = await this.SiteRepository.findOneBy({ id });
 
       if (!site) {
-        throw new Error('Site not found');
+        return;
       }
 
       const siteTotalBudget = parseFloat(site.budget);
