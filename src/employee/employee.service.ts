@@ -58,6 +58,7 @@ export class EmployeeService {
     userId: number,
   ) {
     const user = await this.userRepository.findBy({ id: userId });
+    console.log(user, user[0].is_admin);
     const resp = user[0].is_admin
       ? await this.employeeRepository.find({
           where: {
