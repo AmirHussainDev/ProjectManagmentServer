@@ -16,7 +16,7 @@ export class Employee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   position: string;
 
   @ManyToOne(() => User)
@@ -55,6 +55,9 @@ export class Employee {
 
   @Column({ nullable: true })
   siginout_required: boolean;
+
+  @Column({ nullable: true })
+  deleted: boolean;
 
   @Column({ nullable: true })
   details: string;

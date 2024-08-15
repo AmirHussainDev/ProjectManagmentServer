@@ -16,7 +16,11 @@ export class AuthService {
       req.body['organization_id'] as number,
       username,
     );
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (
+      user &&
+      !user.deleted &&
+      (await bcrypt.compare(password, user.password))
+    ) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;

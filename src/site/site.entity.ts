@@ -9,7 +9,10 @@ export class Site {
 
     @Column({ nullable: true })
     site_no: number;
-
+    
+    @Column({ nullable: true })
+    site_supervisors: string;
+  
     @Column()
     name: string;
     @Column()
@@ -21,7 +24,7 @@ export class Site {
 
     @Column()
     address: string;
-    @Column({nullable:true})
+    @Column({ nullable: true })
     details: string;
 
     @ManyToOne(type => User)
@@ -79,7 +82,7 @@ export class SiteExpenses {
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, nullable: true })
     unit_price: number;
 
-    @Column()
+    @Column({ nullable: true })
     quantity: number;
 
     @Column({ nullable: true })

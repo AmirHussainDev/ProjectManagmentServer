@@ -32,7 +32,7 @@ export class User {
   @Column('text', { nullable: true })
   password: string;
 
-  @Column('text', { unique: true, nullable: true })
+  @Column('text', { nullable: true })
   email: string;
 
   @Column('text', { unique: true, nullable: true })
@@ -55,6 +55,9 @@ export class User {
 
   @Column('boolean', { nullable: true })
   is_employee: boolean;
+
+  @Column('boolean', { nullable: true })
+  deleted: boolean;
 
   @ManyToOne(() => RolePermissions)
   @JoinColumn({ name: 'role_id' })

@@ -181,7 +181,7 @@ export class PurchaseItems {
   @Column()
   name: string;
 
-  @Column()
+  @Column({nullable:true})
   qty: number;
 
   @Column({
@@ -384,7 +384,7 @@ export class SaleItems {
   @Column()
   name: string;
 
-  @Column()
+  @Column({nullable:true})
   qty: number;
 
   @Column('jsonb', { nullable: true })
@@ -482,7 +482,7 @@ export class InventoryItem {
   @JoinColumn({ name: 'vendor_id' })
   vendor: Vendor;
 
-  @Column()
+  @Column({nullable:true})
   qty: number;
 
   @Column({

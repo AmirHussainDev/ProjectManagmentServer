@@ -3,10 +3,13 @@ import { Attendance, Employee, EmployeePayments } from './employee.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { where } from 'sequelize';
+import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class EmployeeService {
   constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
     @InjectRepository(Attendance)
@@ -54,15 +57,26 @@ export class EmployeeService {
     subOrganizationId: number,
     userId: number,
   ) {
-    return await this.employeeRepository.find({
-      where: {
-        organization: { id: organizationId },
-        subOrganization: { id: subOrganizationId },
-        supervisor: { id: userId },
-        employee: { id: Not(userId) },
-      },
-      relations: ['employee', 'supervisor'],
-    });
+    const user = await this.userRepository.findBy({ id: userId });
+    const resp = user[0].is_admin
+      ? await this.employeeRepository.find({
+          where: {
+            organization: { id: organizationId },
+            subOrganization: { id: subOrganizationId },
+            supervisor: { id: userId },
+            employee: { id: Not(userId) },
+          },
+          relations: ['employee', 'supervisor'],
+        })
+      : await this.employeeRepository.find({
+          where: {
+            organization: { id: organizationId },
+            subOrganization: { id: subOrganizationId },
+            employee: { id: Not(userId) },
+          },
+          relations: ['employee', 'supervisor'],
+        });
+    return resp;
   }
 
   async getAllEmployees(organizationId: number, subOrganizationId: number) {
@@ -74,7 +88,7 @@ export class EmployeeService {
       .select('em.id', 'id')
       .addSelect('emp.name', 'employeeName')
       .addSelect('sup.name', 'supervisorName')
-      .addSelect('em.position', 'position')
+      // .addSelect('em.position', 'position')
       .addSelect('em.employee_id', 'employee')
       .addSelect('em.supervisor_id', 'supervisor')
       .addSelect('em.salary', 'salary')
@@ -119,7 +133,7 @@ export class EmployeeService {
     const siteContracts = await this.attendanceRepository
       .createQueryBuilder('em')
       .select('em.id', 'id')
-      .addSelect('em.position', 'position')
+      // .addSelect('em.position', 'position')
       .addSelect('em.employee_id', 'employee')
       .addSelect('em.supervisor_id', 'supervisor')
       .addSelect('em.salary', 'salary')
