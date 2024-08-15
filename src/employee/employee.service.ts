@@ -64,7 +64,6 @@ export class EmployeeService {
           where: {
             organization: { id: organizationId },
             subOrganization: { id: subOrganizationId },
-            supervisor: { id: userId },
             employee: { id: Not(userId) },
           },
           relations: ['employee', 'supervisor'],
@@ -73,6 +72,7 @@ export class EmployeeService {
           where: {
             organization: { id: organizationId },
             subOrganization: { id: subOrganizationId },
+            supervisor: { id: userId },
             employee: { id: Not(userId) },
           },
           relations: ['employee', 'supervisor'],
