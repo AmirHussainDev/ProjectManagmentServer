@@ -16,6 +16,7 @@ export class AuthService {
       req.body['organization_id'] as number,
       username,
     );
+    console.log(user);
     if (
       user &&
       !user.deleted &&
