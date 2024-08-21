@@ -123,24 +123,40 @@ export class InventoryPurchaseService {
     details: SaleRequest;
     products: SaleItems[];
   }): Promise<SaleRequest> {
-    const maxSaleNo = await this.SaleRequestRepository.createQueryBuilder('sr')
-      .select('MAX(sr.sale_no)', 'sale_no')
-      .where('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId: itemDetails.details['sub_organization_id'],
-      })
-      .getRawOne();
-    const nextSaleNo = maxSaleNo.sale_no + 1;
-    const sale = await this.SaleRequestRepository.create({
-      ...itemDetails.details,
-      sale_no: maxSaleNo && maxSaleNo.sale_no ? nextSaleNo : 1,
-    });
-    const resp = await this.SaleRequestRepository.save(sale);
+    let saleRequest = itemDetails.details;
+    if (itemDetails.details.id) {
+      delete itemDetails.details['items'];
+      delete itemDetails.details['new_customer'];
+      this.SaleItemsRepository.delete({ sale: saleRequest });
+      await this.SaleRequestRepository.update(itemDetails.details.id, {
+        ...itemDetails.details,
+      });
+    } else {
+      const maxSaleNo = await this.SaleRequestRepository.createQueryBuilder(
+        'sr',
+      )
+        .select('MAX(sr.sale_no)', 'sale_no')
+        .where('sr.sub_organization_id = :subOrganizationId', {
+          subOrganizationId:
+            itemDetails.details['subOrganization'] ||
+            itemDetails.details['sub_organization_id'],
+        })
+        .getRawOne();
+      const nextSaleNo = maxSaleNo.sale_no + 1;
+      const sale = await this.SaleRequestRepository.create({
+        ...itemDetails.details,
+        sale_no: maxSaleNo && maxSaleNo.sale_no ? nextSaleNo : 1,
+      });
+      saleRequest = await this.SaleRequestRepository.save(sale);
+    }
+
     itemDetails.products = itemDetails.products.map((item) => ({
       ...item,
-      sale: resp,
+      sale: saleRequest,
     }));
+
     this.SaleItemsRepository.save(itemDetails.products);
-    return resp;
+    return saleRequest;
   }
 
   async updateSaleRequest(itemDetails: {
@@ -268,7 +284,7 @@ export class InventoryPurchaseService {
   async getPurchaseRequests(
     organizationId: number,
     subOrganizationId: number,
-    state: string[]=[],
+    state: string[] = [],
   ): Promise<any[]> {
     const query = this.PurchaseRequestRepository.createQueryBuilder('pr')
       .select('pr.id', 'id')
@@ -307,11 +323,11 @@ export class InventoryPurchaseService {
         subOrganizationId,
       })
       .orderBy({ date_created: 'DESC' });
-      if (state.length > 1) {
-        query.andWhere('pr.state IN (:...state)', { state });
-      } else if (state.length > 0) {
-        query.andWhere('pr.state = :state', { state });
-      }
+    if (state.length > 1) {
+      query.andWhere('pr.state IN (:...state)', { state });
+    } else if (state.length > 0) {
+      query.andWhere('pr.state = :state', { state });
+    }
     return await query.getRawMany();
   }
 
@@ -403,9 +419,9 @@ export class InventoryPurchaseService {
         subOrganizationId,
       })
       .orderBy({ date_created: 'DESC' });
-    if (state.length > 1) {
+    if (Array.isArray(state) && state.length) {
       query.andWhere('sr.state IN (:...state)', { state });
-    } else if (state.length > 0) {
+    } else if (!Array.isArray(state) && state) {
       query.andWhere('sr.state = :state', { state });
     }
     // console.log(query)
@@ -437,6 +453,7 @@ export class InventoryPurchaseService {
         'pr.created_by',
         'pr.payment_history',
         'u.name',
+        'u.id',
         'so.name',
         'pr.date_created',
         'pr.total',
@@ -507,6 +524,7 @@ export class InventoryPurchaseService {
         'c.name',
         'c',
         'u.name',
+        'u.id',
         'so.name',
         'sr.date_created',
         'sr.total',
