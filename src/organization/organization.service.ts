@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Organization,
-  SubOrganization,
-  Vendor,
-  VendorItem,
+  Client,
+  Project,
+  ProjectItem,
 } from './organization.entity';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -15,14 +15,14 @@ export class OrganizationService {
   constructor(
     @InjectRepository(Organization)
     private readonly OrganizationRepository: Repository<Organization>,
-    @InjectRepository(SubOrganization)
-    private readonly SubOrganizationRepository: Repository<SubOrganization>,
+    @InjectRepository(Client)
+    private readonly ClientRepository: Repository<Client>,
 
-    @InjectRepository(Vendor)
-    private readonly VendorRepository: Repository<Vendor>,
-    @InjectRepository(VendorItem)
-    private readonly VendorItemRepository: Repository<VendorItem>,
-  ) { }
+    @InjectRepository(Project)
+    private readonly ProjectRepository: Repository<Project>,
+    @InjectRepository(ProjectItem)
+    private readonly ProjectItemRepository: Repository<ProjectItem>,
+  ) {}
 
   async createOrganization(
     name: string,
@@ -39,20 +39,17 @@ export class OrganizationService {
     return this.OrganizationRepository.save(Organization);
   }
 
-  async createSubOrganization(body): Promise<boolean> {
-    console.log(body)
-    const SubOrganization = this.SubOrganizationRepository.create(body);
-    await this.SubOrganizationRepository.save(SubOrganization);
+  async createClient(body): Promise<boolean> {
+    console.log(body);
+    const Client = this.ClientRepository.create(body);
+    await this.ClientRepository.save(Client);
     return true;
   }
-  async updateSubOrganization(body:any): Promise<boolean> {
-    console.log(body)
-    const SubOrganization = this.SubOrganizationRepository.create(body);
-    await this.SubOrganizationRepository.update(
-      { id: parseInt(body.id)},
-      { ...body },
-    );
-    await this.SubOrganizationRepository.save(SubOrganization);
+  async updateClient(body: any): Promise<boolean> {
+    console.log(body);
+    const Client = this.ClientRepository.create(body);
+    await this.ClientRepository.update({ id: parseInt(body.id) }, { ...body });
+    await this.ClientRepository.save(Client);
     return true;
   }
 
@@ -60,34 +57,34 @@ export class OrganizationService {
     return this.OrganizationRepository.find();
   }
 
-  async getAllSubOrganizations(
-    organization_id: string,
-  ): Promise<SubOrganization[]> {
-    return this.SubOrganizationRepository.findBy({
+  async getAllClients(organization_id: string): Promise<Client[]> {
+    return this.ClientRepository.findBy({
       organization_id: parseInt(organization_id),
     });
   }
 
-  async getSubOrganizationDetails(
+  async getClientDetails(
     organization_id: string,
-    subOrg_id: string,
-  ): Promise<SubOrganization> {
-    return this.SubOrganizationRepository.findOneBy({
+    client_id: string,
+  ): Promise<Client> {
+    return this.ClientRepository.findOneBy({
       organization_id: parseInt(organization_id),
-      id: parseInt(subOrg_id),
+      id: parseInt(client_id),
     });
   }
 
-  async getVendors(organization_id: number): Promise<Vendor[]> {
-    return this.VendorRepository.find({
-      where: { organization_id },
+  async getProjects(organization, client): Promise<Project[]> {
+    return this.ProjectRepository.find({
+      where: { organization, client },
       order: { name: 'ASC' },
     });
   }
 
-  async createVendor(
-    organization_id: number,
+  async createProject(
+    organization,
+    client,
     name: string,
+    description: string,
     file,
   ): Promise<any> {
     const uploadDir = path.join('', '..', 'uploads');
@@ -102,25 +99,27 @@ export class OrganizationService {
       filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
     }
-    const vendor = this.VendorRepository.create({
-      organization_id,
+    const project = this.ProjectRepository.create({
+      organization,
+      client,
+      description,
       name,
       filename: fileName,
     });
-    return this.VendorRepository.save(vendor);
+    return this.ProjectRepository.save(project);
   }
 
-  async updateVendor(
-    vendor_id: string,
-    { name, email, address, contact_no }: any,
+  async updateProject(
+    project_id: string,
+    { name, description }: any,
     file,
-  ): Promise<Vendor> {
-    const updatedVendor = await this.VendorRepository.findOneBy({
-      id: parseInt(vendor_id),
+  ): Promise<Project> {
+    const updatedProject = await this.ProjectRepository.findOneBy({
+      id: parseInt(project_id),
     });
 
-    if (!updatedVendor) {
-      throw new Error('Vendor not found');
+    if (!updatedProject) {
+      throw new Error('Project not found');
     }
 
     let uploadDir = path.join(__dirname, '..', 'uploads');
@@ -128,10 +127,9 @@ export class OrganizationService {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-
     // Delete the existing file if present
-    if (updatedVendor.filename) {
-      const existingFilePath = path.join(uploadDir, updatedVendor.filename);
+    if (file && updatedProject.filename) {
+      const existingFilePath = path.join(uploadDir, updatedProject.filename);
       if (fs.existsSync(existingFilePath)) {
         fs.unlinkSync(existingFilePath);
       }
@@ -145,48 +143,45 @@ export class OrganizationService {
       filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
     }
-    let body = { name, email, address, contact_no, filename: fileName }
+    let body = { name, description, filename: fileName };
     if (fileName) {
-      body = { ...body, filename: fileName }
+      body = { ...body, filename: fileName };
     }
-    await this.VendorRepository.update(
-      { id: parseInt(vendor_id) },
-      body
-    );
+    await this.ProjectRepository.update({ id: parseInt(project_id) }, body);
 
-    // Find and return the updated vendor
-    const updatedVendorAfterSave = await this.VendorRepository.findOneBy({
-      id: parseInt(vendor_id),
+    // Find and return the updated project
+    const updatedProjectAfterSave = await this.ProjectRepository.findOneBy({
+      id: parseInt(project_id),
     });
 
-    if (!updatedVendorAfterSave) {
-      // Handle case where vendor is not found after update
-      throw new Error('Vendor not found after update');
+    if (!updatedProjectAfterSave) {
+      // Handle case where project is not found after update
+      throw new Error('Project not found after update');
     }
 
-    return updatedVendorAfterSave;
+    return updatedProjectAfterSave;
   }
 
-  async getVendorItems(vendor_id: number): Promise<VendorItem[]> {
-    return this.VendorItemRepository.findBy({ vendor_id });
+  async getProjectItems(project_id: number): Promise<ProjectItem[]> {
+    return this.ProjectItemRepository.findBy({ project_id });
   }
 
-  async createVendorItem(vendor_id, name: string): Promise<VendorItem> {
-    const Site = this.VendorItemRepository.create({ vendor_id, name });
-    return this.VendorItemRepository.save(Site);
+  async createProjectItem(project_id, name: string): Promise<ProjectItem> {
+    const Site = this.ProjectItemRepository.create({ project_id, name });
+    return this.ProjectItemRepository.save(Site);
   }
 
-  async updateVendorItem(
-    vendor_id: string,
+  async updateProjectItem(
+    project_id: string,
     item_id: string,
     name: string,
-  ): Promise<VendorItem> {
-    await this.VendorItemRepository.update(
-      { vendor_id: parseInt(vendor_id), id: parseInt(item_id) },
+  ): Promise<ProjectItem> {
+    await this.ProjectItemRepository.update(
+      { project_id: parseInt(project_id), id: parseInt(item_id) },
       { name },
     );
     // Find and return the updated user
-    const updatedItem = await this.VendorItemRepository.findOneBy({
+    const updatedItem = await this.ProjectItemRepository.findOneBy({
       id: parseInt(item_id),
     });
     if (!updatedItem) {

@@ -1,6 +1,6 @@
 import {
   Organization,
-  SubOrganization,
+  Client,
 } from 'src/organization/organization.entity';
 import { User } from 'src/user/user.entity';
 import {
@@ -23,9 +23,9 @@ export class Customer {
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @ManyToOne(() => SubOrganization)
-  @JoinColumn({ name: 'sub_organization_id' })
-  subOrganization: SubOrganization;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by_id' })

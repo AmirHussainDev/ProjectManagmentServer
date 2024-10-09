@@ -14,7 +14,7 @@ import { AuthController } from './auth.controller';
     UserModule,
     PassportModule,
     JwtModule.register({
-      secret: 'Veins-Login-Secret',
+      secret: 'Eleware-Login-Secret',
       signOptions: { expiresIn: '8h' },
     }),
     JwtModule,

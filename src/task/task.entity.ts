@@ -1,8 +1,8 @@
 import { Customer } from 'src/customer/customer.entity';
 import {
   Organization,
-  SubOrganization,
-  Vendor,
+  Client,
+  Project,
 } from 'src/organization/organization.entity';
 import { Site } from 'src/site/site.entity';
 import { User } from 'src/user/user.entity';
@@ -15,173 +15,79 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class PurchaseRequest {
+export class TaskRequest {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ nullable: true })
-  isSiteBased: boolean;
-
-  @Column({ nullable: true })
-  site_ids: string;
+  task_no: number;
 
   @ManyToOne(() => Organization)
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @ManyToOne(() => SubOrganization)
-  @JoinColumn({ name: 'sub_organization_id' })
-  subOrganization: SubOrganization;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by_id' })
   created_by: User;
 
-  @ManyToOne(() => Vendor)
-  @JoinColumn({ name: 'vendor_id' })
-  vendor: Vendor;
-
   @Column({ nullable: true })
-  notes: string;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  item_cost: number;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  additional_cost: number;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  shipment_charges: number;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  total: number;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  amount_paid: number;
-
-  @Column('jsonb', { nullable: true })
-  payment_history: any;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  discount_total: number;
-
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  balance: number;
+  description: string;
 
   @Column()
   state: number;
+  @Column()
+  type: number;
+  @Column({ nullable: true })
+  severity: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date_created: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  balance_to_be_paid_on: Date;
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: true,
+  })
+  start_date: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  date_confirmation_on: Date;
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: true,
+  })
+  due_date: Date;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   last_modified_on: Date;
 
   @Column({ nullable: true })
-  subject: string;
+  title: string;
 
   @Column({ nullable: true })
-  overall_discount: number;
-  @Column({
-    nullable: true,
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
-  invoice_date: Date;
-  @Column({
-    nullable: true,
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
-  due_date: Date;
-  @Column({ nullable: true })
-  sales_person: number;
+  assignee: number;
   @Column('jsonb', { nullable: true })
   attachment: any;
   @Column({ nullable: true })
   terms: string;
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  items_discount_total: number;
-  @Column({
-    nullable: true,
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0.0,
-  })
-  overall_discount_total: number;
-
-  @Column({ nullable: true })
-  purchase_no: number;
 }
 
 @Entity()
-export class PurchaseItems {
+export class TaskItems {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => PurchaseRequest)
-  @JoinColumn({ name: 'purchase_id' })
-  purchase: PurchaseRequest;
+  @ManyToOne(() => TaskRequest)
+  @JoinColumn({ name: 'task_id' })
+  task: TaskRequest;
 
   @Column()
   name: string;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   qty: number;
 
   @Column({
@@ -231,16 +137,16 @@ export class SaleRequest {
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @ManyToOne(() => SubOrganization)
-  @JoinColumn({ name: 'sub_organization_id' })
-  subOrganization: SubOrganization;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by_id' })
   created_by: User;
 
   @Column({ nullable: true })
-  notes: string;
+  description: string;
 
   @Column({
     nullable: true,
@@ -322,7 +228,7 @@ export class SaleRequest {
   last_modified_on: Date;
 
   @Column({ nullable: true })
-  subject: string;
+  title: string;
 
   @Column({ nullable: true })
   overall_discount: number;
@@ -377,14 +283,14 @@ export class SaleItems {
   @JoinColumn({ name: 'sale_id' })
   sale: SaleRequest;
 
-  @ManyToOne(() => Vendor, { nullable: true })
-  @JoinColumn({ name: 'vendor_id' })
-  vendor: Vendor;
+  @ManyToOne(() => Project, { nullable: true })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 
   @Column()
   name: string;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   qty: number;
 
   @Column('jsonb', { nullable: true })
@@ -438,8 +344,8 @@ export class InventoryItem {
   organization_id: number;
 
   @Column()
-  @ManyToOne(() => SubOrganization)
-  sub_organization_id: number;
+  @ManyToOne(() => Client)
+  client_id: number;
 
   @Column({ nullable: true })
   isSiteBased: boolean;
@@ -448,15 +354,15 @@ export class InventoryItem {
   site_ids: string;
 
   @Column({ nullable: true })
-  @ManyToOne(() => PurchaseRequest)
-  purchase_id: number;
+  @ManyToOne(() => TaskRequest)
+  task_id: number;
 
   @Column({ nullable: true })
   @ManyToOne(() => SaleRequest)
   sale_id: number;
 
   @Column({ nullable: true })
-  purchase_no: number;
+  task_no: number;
 
   @Column({ nullable: true })
   sale_no: number;
@@ -475,14 +381,14 @@ export class InventoryItem {
   name: string;
 
   // @Column({ nullable: true })
-  // @ManyToOne(() => Vendor)
-  // vendor_id: number;
+  // @ManyToOne(() => Project)
+  // project_id: number;
 
-  @ManyToOne(() => Vendor, { nullable: true })
-  @JoinColumn({ name: 'vendor_id' })
-  vendor: Vendor;
+  @ManyToOne(() => Project, { nullable: true })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   qty: number;
 
   @Column({

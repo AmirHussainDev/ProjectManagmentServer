@@ -33,14 +33,14 @@ export class CustomerController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get(':orgId/:subOrgId')
+  @Get(':orgId/:clientId')
   getAllOrganizationCustomers(
     @Param('orgId') orgId: string,
-    @Param('subOrgId') subOrgId: string,
+    @Param('clientId') clientId: string,
   ) {
     return this.customerService.findByOrganizationId(
       parseInt(orgId),
-      parseInt(subOrgId),
+      parseInt(clientId),
     );
   }
 }

@@ -46,10 +46,10 @@ export class CustomerService {
     });
   }
 
-  async findByOrganizationId(organization_id: number, subOrgId: number) {
+  async findByOrganizationId(organization_id: number, clientId: number) {
     return this.CustomerRepository.findBy({
       organization: { id: organization_id },
-      subOrganization: { id: subOrgId },
+      client: { id: clientId },
     });
   }
 }

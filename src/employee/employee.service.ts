@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Attendance, Employee, EmployeePayments } from './employee.entity';
+import { Worklog, Employee, EmployeePayments } from './employee.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, MoreThanOrEqual, Not, Repository } from 'typeorm';
-import { where } from 'sequelize';
 import { User } from 'src/user/user.entity';
+import { TaskWorkLog } from 'src/site/site.entity';
 
 @Injectable()
 export class EmployeeService {
@@ -12,11 +12,13 @@ export class EmployeeService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-    @InjectRepository(Attendance)
-    private readonly attendanceRepository: Repository<Attendance>,
+    @InjectRepository(Worklog)
+    private readonly worklogRepository: Repository<Worklog>,
     @InjectRepository(EmployeePayments)
     private readonly employeePaymentsRepository: Repository<EmployeePayments>,
-  ) {}
+    @InjectRepository(TaskWorkLog)
+    private readonly taskWorkLogRepository: Repository<TaskWorkLog>,
+  ) { }
 
   async createEmployee(userObj: any): Promise<Employee> {
     const Employee = this.employeeRepository.create({ ...userObj });
@@ -39,84 +41,90 @@ export class EmployeeService {
 
   async getUserEmployeeDetails(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     userId: number,
   ) {
     return await this.employeeRepository.findOne({
       where: {
         organization: { id: organizationId },
-        subOrganization: { id: subOrganizationId },
+        client: { id: clientId },
         employee: { id: userId },
       },
-      relations: ['employee', 'supervisor'],
+      relations: ['employee'],
     });
   }
 
   async getCurrentEmployeeSubordinates(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     userId: number,
   ) {
     const user = await this.userRepository.findBy({ id: userId });
     console.log(user, user[0].is_admin);
     const resp = user[0].is_admin
       ? await this.employeeRepository.find({
-          where: {
-            organization: { id: organizationId },
-            subOrganization: { id: subOrganizationId },
-            employee: { id: Not(userId) },
-          },
-          relations: ['employee', 'supervisor'],
-        })
+        where: {
+          organization: { id: organizationId },
+          client: { id: clientId },
+          employee: { id: Not(userId) },
+        },
+        relations: ['employee'],
+      })
       : await this.employeeRepository.find({
-          where: {
-            organization: { id: organizationId },
-            subOrganization: { id: subOrganizationId },
-            supervisor: { id: userId },
-            employee: { id: Not(userId) },
-          },
-          relations: ['employee', 'supervisor'],
-        });
+        where: {
+          organization: { id: organizationId },
+          client: { id: clientId },
+          employee: { id: Not(userId) },
+        },
+        relations: ['employee'],
+      });
     return resp;
   }
 
-  async getAllEmployees(organizationId: number, subOrganizationId: number) {
+  async getAllEmployees(organizationId: number, clientId: number) {
     // console.log('here')
     const siteContracts = await this.employeeRepository
       .createQueryBuilder('em')
       .leftJoin('em.employee', 'emp')
-      .leftJoin('em.supervisor', 'sup')
       .select('em.id', 'id')
       .addSelect('emp.name', 'employeeName')
-      .addSelect('sup.name', 'supervisorName')
-      // .addSelect('em.position', 'position')
+      .addSelect('em.position', 'position')
       .addSelect('em.employee_id', 'employee')
-      .addSelect('em.supervisor_id', 'supervisor')
       .addSelect('em.salary', 'salary')
       .addSelect('em.overtime', 'overtime')
       .addSelect('em.workingHours', 'workingHours')
-      .addSelect('em.isSalaryHourly', 'isSalaryHourly')
+      .addSelect('em.isHourlyRateHourly', 'isHourlyRateHourly')
       .addSelect('em.details', 'details')
       .addSelect('em.siginout_required', 'siginout_required')
       .where('em.organization_id = :organizationId', { organizationId })
-      .andWhere('em.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('em.client_id = :clientId', {
+        clientId,
       })
       .getRawMany();
 
     return siteContracts;
   }
 
-  async createAttendance(userObj: any): Promise<Attendance> {
-    const Employee = this.attendanceRepository.create({ ...userObj });
-    return this.attendanceRepository.save(Employee) as any;
+  async createWorklog(userObj: any): Promise<TaskWorkLog> {
+    const Employee = this.taskWorkLogRepository.create({ ...userObj });
+    return this.worklogRepository.save(Employee) as any;
   }
-  async updateAttendance(userObj: any): Promise<Attendance> {
+
+  async payEmployeeWorklog(clientId: number, userId: number): Promise<boolean> {
     // Update the user
-    await this.attendanceRepository.update({ id: userObj.id }, { ...userObj });
+    await this.taskWorkLogRepository.update(
+      { created_by: { id: userId }, client: { id: clientId } },
+      { paid: true },
+    );
+
+    return true;
+  }
+  async updateWorklog(userObj: any): Promise<TaskWorkLog> {
+    // Update the user
+    await this.taskWorkLogRepository.update({ id: userObj.id }, { ...userObj });
 
     // Find and return the updated user
-    const updatedEmployee = await this.attendanceRepository.findOneBy({
+    const updatedEmployee = await this.taskWorkLogRepository.findOneBy({
       id: userObj.id,
     });
     if (!updatedEmployee) {
@@ -126,12 +134,12 @@ export class EmployeeService {
     return updatedEmployee;
   }
 
-  async getAllAttendance(
+  async getAllWorklog(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     employeeId: number,
   ) {
-    const siteContracts = await this.attendanceRepository
+    const siteContracts = await this.worklogRepository
       .createQueryBuilder('em')
       .select('em.id', 'id')
       // .addSelect('em.position', 'position')
@@ -141,17 +149,17 @@ export class EmployeeService {
       .addSelect('em.overtime', 'overtime')
       .addSelect('em.siginout_required', 'siginout_required')
       .where('em.organization_id = :organizationId', { organizationId })
-      .andWhere('em.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('em.client_id = :clientId', {
+        clientId,
       })
       .getRawMany();
 
     return siteContracts;
   }
 
-  async getCurrentDateAttendance(
+  async getCurrentDateWorklog(
     employeeId: number,
-  ): Promise<Attendance | undefined> {
+  ): Promise<Worklog | undefined> {
     const currentDate = new Date();
     const currentDateStart = new Date(
       currentDate.getFullYear(),
@@ -170,7 +178,7 @@ export class EmployeeService {
       59,
     );
 
-    return await this.attendanceRepository.findOne({
+    return await this.worklogRepository.findOne({
       where: {
         employee: { id: employeeId },
         date_created: Between(currentDateStart, currentDateEnd),
@@ -178,34 +186,15 @@ export class EmployeeService {
     });
   }
 
-  async getCurrentEmployeeAttendance(
+  async getcurrentEmployeeWorkLog(
     employeeId: number,
-  ): Promise<{ lastPayment: EmployeePayments; attendances: Attendance[] }> {
-    let attendances: Attendance[];
-
-    // Check if there's any payment record for the employee
-    const lastPayment = await this.employeePaymentsRepository.findOne({
-      where: { employee: { id: employeeId } },
+    clientId: number,
+  ): Promise<any[]> {
+    return await this.taskWorkLogRepository.find({
+      where: { created_by: { id: employeeId }, client: { id: clientId } },
       order: { date_created: 'DESC' },
+      relations: ['task'],
     });
-
-    if (lastPayment) {
-      // Case 1: If payment record found, retrieve attendance after the last payment
-
-      attendances = await this.attendanceRepository.find({
-        where: {
-          employee: { id: employeeId },
-          date_created: MoreThanOrEqual(lastPayment.date_created),
-        },
-      });
-    } else {
-      // Case 2: If no payment record found, retrieve all attendance for the employee
-      attendances = await this.attendanceRepository.find({
-        where: { employee: { id: employeeId } },
-      });
-    }
-
-    return { lastPayment, attendances };
   }
 
   async createPayments(userObj: any): Promise<EmployeePayments> {
@@ -215,13 +204,13 @@ export class EmployeeService {
 
   async getAllEmployeePayments(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     employeeId: number,
   ) {
     const payments = await this.employeePaymentsRepository.find({
       where: {
         organization: { id: organizationId },
-        subOrganization: { id: subOrganizationId },
+        client: { id: clientId },
         employee: { id: employeeId },
       },
       order: { date_created: 'DESC' },
@@ -229,45 +218,40 @@ export class EmployeeService {
 
     return payments;
   }
-  async getAllEmployeeDuePayments(
-    organizationId: number,
-    subOrganizationId: number,
-  ) {
+
+  async getAllEmployeeDuePayments(organizationId: number, clientId: number) {
     const paymentArray = [];
 
     try {
       const employees = await this.employeeRepository.find({
         where: {
           organization: { id: organizationId },
-          subOrganization: { id: subOrganizationId },
+          client: { id: clientId },
         },
-        relations: ['employee', 'supervisor'],
+        relations: ['employee'],
         order: { date_created: 'DESC' },
       });
 
       for (let i = 0; i < employees.length; i++) {
-        const employeeId = employees[i].id;
-        const lastPayment = await this.employeePaymentsRepository.findOne({
-          where: { employee: { id: employeeId } },
-          order: { date_created: 'DESC' },
-        });
+        const employeeId = employees[i].employee.id;
+        const worklog = await this.getcurrentEmployeeWorkLog(
+          employeeId,
+          clientId,
+        );
+        // Calculate total worked hours and remaining unpaid hours
+        const totalWorkedHours = worklog.reduce(
+          (total, log) => total + log.no_of_hours,
+          0,
+        );
 
-        const paymentObject = await this.attendanceRepository
-          .createQueryBuilder('attendance')
-          .select('SUM(attendance.amount)', 'totalAmount')
-          .addSelect('MIN(attendance.date_created)', 'minDateCreated')
-          .where('attendance.employee.id = :employeeId', {
-            employeeId: employeeId,
-          })
-          .andWhere('attendance.date_created >= :lastPaymentDate', {
-            lastPaymentDate: lastPayment
-              ? lastPayment.date_created
-              : employees[i].date_created,
-          })
-          .getRawOne();
-
-        paymentObject.balance = lastPayment?.balance || 0;
-        paymentArray.push({ employee: employees[i], paymentObject });
+        const remainingUnpaidHours = worklog
+          .filter((log) => !log.paid) // Filter unpaid worklogs
+          .reduce((total, log) => total + log.no_of_hours, 0);
+        const paymentObject = {
+          totalAmount: totalWorkedHours * employees[i].salary,
+          balance: remainingUnpaidHours * employees[i].salary,
+        };
+        paymentArray.push({ employee: employees[i], worklog, paymentObject });
       }
     } catch (err) {
       console.error(err);

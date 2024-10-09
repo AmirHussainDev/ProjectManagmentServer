@@ -14,7 +14,7 @@ import {
   Site,
   SiteExpenses,
   SiteOwnerPayments,
-  SiteContractorWorkLog,
+  TaskWorkLog,
   SiteContractorPayments,
 } from './site.entity';
 import { SiteStatisticsDto } from './site.interface.dto';
@@ -43,45 +43,45 @@ export class SiteController {
     return this.SiteService.getSiteStatistics(siteId);
   }
   @UseGuards(AuthGuard('jwt'))
-  @Get('statistics/all/:orgId/:subOrg')
+  @Get('statistics/all/:orgId/:client')
   async getAllSitesStatistics(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
   ): Promise<SiteStatisticsDto[]> {
     return this.SiteService.getAllSitesStatistics(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
     );
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get(':orgId/:subOrg')
+  @Get(':orgId/:client')
   getAllOrganizationSites(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
   ) {
     return this.SiteService.findByOrganizationId(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
     );
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get(':orgId/:subOrg/:siteId')
+  @Get(':orgId/:client/:siteId')
   getSiteById(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
     @Param('siteId') siteId: string,
   ) {
     return this.SiteService.findBySiteId(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
       parseInt(siteId),
     );
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Put(':orgId/:subOrg/:siteId')
+  @Put(':orgId/:client/:siteId')
   updateSiteDetails(@Body() requestDetails: Site) {
     return this.SiteService.updateSiteDetails(requestDetails);
   }
@@ -99,15 +99,15 @@ export class SiteController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('contracts/:orgId/:subOrg/:siteId')
+  @Get('contracts/:orgId/:client/:siteId')
   get_contracts_request(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
     @Param('siteId') siteId: string,
   ) {
     return this.SiteService.getAllContracts(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
       parseInt(siteId),
     );
   }
@@ -117,12 +117,12 @@ export class SiteController {
   get_contract_request(
     @Param('organizationId') orgId: string,
     @Param('siteId') siteId: string,
-    @Param('contractId') subOrg: string,
+    @Param('contractId') client: string,
   ) {
     return this.SiteService.getContract(
       parseInt(orgId),
       parseInt(siteId),
-      parseInt(subOrg),
+      parseInt(client),
     );
   }
 
@@ -139,15 +139,15 @@ export class SiteController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('expenses/:orgId/:subOrg/:siteId')
+  @Get('expenses/:orgId/:client/:siteId')
   getSiteExpenses(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
     @Param('siteId') siteId: string,
   ) {
     return this.SiteService.getSiteExpenses(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
       parseInt(siteId),
     );
   }
@@ -165,74 +165,31 @@ export class SiteController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('ownerpayment/:orgId/:subOrg/:siteId')
+  @Get('ownerpayment/:orgId/:client/:siteId')
   getSiteOwnerPayments(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
     @Param('siteId') siteId: string,
   ) {
     return this.SiteService.getSiteOwnerPayments(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
       parseInt(siteId),
     );
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('contractorspayment/:orgId/:subOrg/:siteId')
+  @Get('contractorspayment/:orgId/:client/:siteId')
   getSiteContractorsPayments(
     @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
+    @Param('client') client: string,
     @Param('siteId') siteId: string,
   ) {
     return this.SiteService.getSiteContractorsPayments(
       parseInt(orgId),
-      parseInt(subOrg),
+      parseInt(client),
       parseInt(siteId),
     );
   }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Post('contractworklog')
-  createSiteContractworklog(@Body() requestDetails: SiteContractorWorkLog) {
-    return this.SiteService.createSiteWorkLog(requestDetails);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('contractworklog/:orgId/:subOrg/:siteId/:contractId')
-  getSiteContractPayments(
-    @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
-    @Param('siteId') siteId: string,
-    @Param('contractId') contractId: string,
-  ) {
-    return this.SiteService.getSiteWorkLogs(
-      parseInt(orgId),
-      parseInt(subOrg),
-      parseInt(siteId),
-      parseInt(contractId),
-    );
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Post('contractpayment')
-  createSiteContractPayment(@Body() requestDetails: SiteContractorPayments) {
-    return this.SiteService.createSiteContractPayment(requestDetails);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('contractpayment/:orgId/:subOrg/:siteId/:contractId')
-  getSiteContractworklogs(
-    @Param('orgId') orgId: string,
-    @Param('subOrg') subOrg: string,
-    @Param('siteId') siteId: string,
-    @Param('contractId') contractId: string,
-  ) {
-    return this.SiteService.getSiteContractPayments(
-      parseInt(orgId),
-      parseInt(subOrg),
-      parseInt(siteId),
-      parseInt(contractId),
-    );
-  }
 }

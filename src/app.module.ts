@@ -7,9 +7,9 @@ import { User } from './user/user.entity';
 import { OrganizationModule } from './organization/organization.module';
 import {
   Organization,
-  SubOrganization,
-  Vendor,
-  VendorItem,
+  Client,
+  Project,
+  ProjectItem,
 } from './organization/organization.entity';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
@@ -24,22 +24,22 @@ import {
   SiteOwnerPayments,
   SiteExpenses,
   SiteContractPayments,
-  SiteContractorWorkLog,
+  TaskWorkLog,
   SiteContractorPayments,
 } from './site/site.entity';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 import { RolePermissions } from './role-permissions/role-permissions.entity';
-import { InventoryPurchaseModule } from './inventory-purchase/inventory-purchase.module';
+import { InventoryTaskModule } from './task/task.module';
 import {
   InventoryItem,
-  PurchaseItems,
-  PurchaseRequest,
+  TaskItems,
+  TaskRequest,
   SaleItems,
   SaleRequest,
-} from './inventory-purchase/inventory-purchase.entity';
+} from './task/task.entity';
 import { EmployeeModule } from './employee/employee.module';
 import {
-  Attendance,
+  Worklog,
   Employee,
   EmployeePayments,
 } from './employee/employee.entity';
@@ -54,17 +54,17 @@ import { CustomerModule } from './customer/customer.module';
       port: 5432,
       username: 'postgres',
       password: 'postgres',
-      database: 'postgres',
+      database: 'project_management',
       entities: [
         User,
         Organization,
-        SubOrganization,
+        Client,
         Site,
         RolePermissions,
-        Vendor,
-        VendorItem,
-        PurchaseRequest,
-        PurchaseItems,
+        Project,
+        ProjectItem,
+        TaskRequest,
+        TaskItems,
         SaleRequest,
         SaleItems,
         InventoryItem,
@@ -73,25 +73,25 @@ import { CustomerModule } from './customer/customer.module';
         SiteOwnerPayments,
         SiteContractPayments,
         SiteContractorPayments,
-        SiteContractorWorkLog,
+        TaskWorkLog,
         Employee,
-        Attendance,
+        Worklog,
         EmployeePayments,
         Customer,
       ],
       synchronize: true,
     }),
     JwtModule.register({
-      secret: 'Veins-Login-Secret',
+      secret: 'Eleware-Login-Secret',
       signOptions: { expiresIn: '1h' },
     }),
     UserModule,
     SiteModule,
     OrganizationModule,
-    InventoryPurchaseModule,
+    InventoryTaskModule,
     AuthModule,
     RolePermissionsModule,
-    InventoryPurchaseModule,
+    InventoryTaskModule,
     EmployeeModule,
     CustomerModule,
   ],

@@ -12,7 +12,7 @@ import {
 import { OrganizationService } from './organization.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
-import { Vendor } from './organization.entity';
+import { Project } from './organization.entity';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('api/organizations')
@@ -50,85 +50,98 @@ export class OrganizationController {
 
   // @UseInterceptors(FileInterceptor('file'))
   @UseGuards(AuthGuard('jwt'))
-  @Post('subOrg')
-  createSubOrganization(
+  @Post('client')
+  createClient(
     @Body()
     body,
     // @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.organizationService.createSubOrganization(body);
+    return this.organizationService.createClient(body);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Put('subOrg')
-  updateSubOrganization(
+  @Put('client')
+  updateClient(
     @Body()
     body,
     // @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.organizationService.updateSubOrganization(body);
+    return this.organizationService.updateClient(body);
   }
 
-  @Get('vendor/:orgId')
-  getVendors(@Param('orgId') orgId: string) {
-    return this.organizationService.getVendors(parseInt(orgId));
+  @Get('project/:orgId/:clientId')
+  getProjects(
+    @Param('orgId') orgId: string,
+    @Param('clientId') clientId: string,
+  ) {
+    return this.organizationService.getProjects(
+      parseInt(orgId),
+      parseInt(clientId),
+    );
   }
 
   @UseInterceptors(FileInterceptor('file'))
-  @Post('vendor/:orgId')
-  createVendor(
+  @Post('project/:orgId/:clientId')
+  createProject(
     @Param('orgId') orgId: string,
-    @Body() { name }: { name: string },
+    @Param('clientId') clientId: string,
+    @Body() { name, description }: { name: string; description: string },
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<Vendor> {
-    return this.organizationService.createVendor(parseInt(orgId), name, file);
+  ): Promise<Project> {
+    return this.organizationService.createProject(
+      parseInt(orgId),
+      parseInt(clientId),
+      name,
+      description,
+      file,
+    );
   }
 
   @UseInterceptors(FileInterceptor('file'))
-  @Put('vendor/:orgId/:vendorId')
-  updateVendor(
-    @Param('vendorId') vendorId: string,
-    @Body() body: { name: string },
+  @Put('project/:orgId/:projectId')
+  updateProject(
+    @Param('projectId') projectId: string,
+    @Body() body: { name: string; description: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.organizationService.updateVendor(vendorId, body,file);
+    return this.organizationService.updateProject(projectId, body, file);
   }
 
-  @Get('vendor-items/:orgId/:vendorId')
-  getVendorItems(
+  @Get('project-items/:orgId/:projectId')
+  getProjectItems(
     @Param('orgId') orgId: string,
-    @Param('vendorId') vendorId: string,
+    @Param('projectId') projectId: string,
   ) {
-    return this.organizationService.getVendorItems(parseInt(vendorId));
+    return this.organizationService.getProjectItems(parseInt(projectId));
   }
 
-  @Post('vendor-item/:orgId/:vendorId')
-  createVendorItem(
-    @Param('vendorId') vendorId: string,
+  @Post('project-item/:orgId/:projectId')
+  createProjectItem(
+    @Param('projectId') projectId: string,
     @Body() { name }: { name: string },
   ) {
-    return this.organizationService.createVendorItem(vendorId, name);
+    return this.organizationService.createProjectItem(projectId, name);
   }
 
-  @Put('vendor-item/:orgId/:vendorId/:itemId')
-  updateVendorItem(
-    @Param('vendorId') vendorId: string,
+  @Put('project-item/:orgId/:projectId/:itemId')
+  updateProjectItem(
+    @Param('projectId') projectId: string,
     @Param('itemId') itemId: string,
     @Body() { name }: { name: string },
   ) {
-    return this.organizationService.updateVendorItem(vendorId, itemId, name);
+    return this.organizationService.updateProjectItem(projectId, itemId, name);
   }
 
   @Get(':orgId')
   getSubAllOrganizations(@Param('orgId') orgId: string) {
-    return this.organizationService.getAllSubOrganizations(orgId);
+    return this.organizationService.getAllClients(orgId);
   }
 
-  @Get(':orgId/:subOrgId')
-  getUserSubOrganizations(
+  @Get(':orgId/:clientId')
+  getUserClients(
     @Param('orgId') orgId: string,
-    @Param('subOrgId') subOrgId: string,
+    @Param('clientId') clientId: string,
   ) {
-    return this.organizationService.getSubOrganizationDetails(orgId, subOrgId);
+    return this.organizationService.getClientDetails(orgId, clientId);
   }
 }

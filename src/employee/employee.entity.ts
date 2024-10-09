@@ -1,7 +1,4 @@
-import {
-  Organization,
-  SubOrganization,
-} from 'src/organization/organization.entity';
+import { Organization, Client } from 'src/organization/organization.entity';
 import { User } from 'src/user/user.entity';
 import {
   Entity,
@@ -27,28 +24,23 @@ export class Employee {
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @ManyToOne(() => SubOrganization)
-  @JoinColumn({ name: 'sub_organization_id' })
-  subOrganization: SubOrganization;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'supervisor_id' })
-  supervisor: User;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @Column({
     type: 'decimal',
     precision: 10,
     scale: 2,
     default: 0.0,
-    nullable: true,
   })
   salary: number;
 
-  @Column()
+  @Column({ nullable: true })
   overtime: boolean;
 
   @Column({ nullable: true })
-  isSalaryHourly: boolean;
+  isHourlyRateHourly: boolean;
 
   @Column({ nullable: true })
   workingHours: number;
@@ -71,7 +63,7 @@ export class Employee {
 }
 
 @Entity()
-export class Attendance {
+export class Worklog {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -111,7 +103,7 @@ export class Attendance {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
-  attendance_date: Date;
+  worklog_date: Date;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by_id' })
@@ -152,15 +144,15 @@ export class EmployeePayments {
   balance: number;
 
   @Column({ nullable: true })
-  payment_notes: string;
+  payment_description: string;
 
   @ManyToOne(() => Organization)
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @ManyToOne(() => SubOrganization)
-  @JoinColumn({ name: 'sub_organization_id' })
-  subOrganization: SubOrganization;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by_id' })

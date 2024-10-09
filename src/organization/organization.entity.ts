@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity()
 export class Organization {
@@ -19,7 +25,7 @@ export class Organization {
 }
 
 @Entity()
-export class SubOrganization {
+export class Client {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -28,13 +34,37 @@ export class SubOrganization {
 
   @Column({ nullable: true })
   filename: string;
+
+  @Column({ nullable: true })
+  contact: string;
+
+  @Column({ nullable: true })
+  projectDescription: string;
+
+  @Column({
+    nullable: true,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0.0,
+  })
+  projectDuration: number;
+
+  @Column({
+    nullable: true,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0.0,
+  })
+  projectBudget: number;
 
   @Column()
   organization_id: number;
 }
 
 @Entity()
-export class Vendor {
+export class Project {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -44,23 +74,20 @@ export class Vendor {
   @Column({ nullable: true })
   filename: string;
 
-  @Column()
-  organization_id: number;
   @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @Column({ nullable: true })
-  contact_no: string;
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
 
   @Column({ nullable: true })
-  address: string;
-
-  @Column({ nullable: true })
-  email: string;
+  description: string;
 }
 
 @Entity()
-export class VendorItem {
+export class ProjectItem {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -68,6 +95,6 @@ export class VendorItem {
   name: string;
 
   @Column()
-  @ManyToOne(() => Vendor)
-  vendor_id: number;
+  @ManyToOne(() => Project)
+  project_id: number;
 }

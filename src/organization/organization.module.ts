@@ -4,18 +4,18 @@ import { OrganizationService } from './organization.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   Organization,
-  SubOrganization,
-  Vendor,
-  VendorItem,
+  Client,
+  Project,
+  ProjectItem,
 } from './organization.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Organization,
-      SubOrganization,
-      Vendor,
-      VendorItem,
+      Client,
+      Project,
+      ProjectItem,
     ]),
   ],
   providers: [OrganizationService],

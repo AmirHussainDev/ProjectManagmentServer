@@ -7,10 +7,10 @@ import {
   SiteExpenses,
   SiteOwnerPayments,
   SiteContractPayments,
-  SiteContractorWorkLog,
+  TaskWorkLog,
   SiteContractorPayments,
 } from './site.entity';
-import { InventoryItem } from 'src/inventory-purchase/inventory-purchase.entity';
+import { InventoryItem } from 'src/task/task.entity';
 import { SiteStatisticsDto } from './site.interface.dto';
 import { error } from 'console';
 
@@ -35,12 +35,9 @@ export class SiteService {
     @InjectRepository(SiteContractPayments)
     private readonly siteContractPaymentsRepository: Repository<SiteContractPayments>,
 
-    @InjectRepository(SiteContractorWorkLog)
-    private readonly siteContractorWorkLogRepository: Repository<SiteContractorWorkLog>,
-
     @InjectRepository(SiteContractorPayments)
     private readonly siteContractorPaymentsRepository: Repository<SiteContractorPayments>,
-  ) { }
+  ) {}
 
   async createSite(siteDetails: Site): Promise<Site> {
     const Site = this.SiteRepository.create({ ...siteDetails });
@@ -104,7 +101,7 @@ export class SiteService {
 
   async getAllSitesStatistics(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
   ): Promise<SiteStatisticsDto[]> {
     try {
       const sitesQuery = this.SiteRepository.createQueryBuilder('site');
@@ -115,13 +112,13 @@ export class SiteService {
         });
       }
 
-      if (sub_organization_id) {
-        sitesQuery.andWhere('site.sub_organization_id = :sub_organization_id', {
-          sub_organization_id,
+      if (client_id) {
+        sitesQuery.andWhere('site.client_id = :client_id', {
+          client_id,
         });
       }
       sitesQuery.andWhere('site.state = 4', {
-        sub_organization_id,
+        client_id,
       });
       const sites = await sitesQuery.getMany();
 
@@ -137,7 +134,7 @@ export class SiteService {
   }
   async findBySiteId(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     site_id: number,
   ): Promise<Site> {
     return this.SiteRepository.createQueryBuilder('site')
@@ -148,12 +145,12 @@ export class SiteService {
 
   async findByOrganizationId(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
   ): Promise<Site[]> {
     return this.SiteRepository.createQueryBuilder('site')
       .where('site.organization_id = :organization_id', { organization_id })
-      .andWhere('site.sub_organization_id = :sub_organization_id', {
-        sub_organization_id,
+      .andWhere('site.client_id = :client_id', {
+        client_id,
       })
       .getMany();
   }
@@ -164,8 +161,8 @@ export class SiteService {
   }
 
   async createSiteContracts(details: SiteContracts) {
-    const purchase = this.SiteContractsRepository.create(details);
-    const resp = await this.SiteContractsRepository.save(purchase);
+    const task = this.SiteContractsRepository.create(details);
+    const resp = await this.SiteContractsRepository.save(task);
     return resp;
   }
 
@@ -191,18 +188,18 @@ export class SiteService {
 
   async getAllContracts(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     siteId: number,
   ) {
     try {
       const SiteContracts =
         await this.SiteContractsRepository.createQueryBuilder('cd')
           .innerJoinAndSelect('cd.created_by', 'usr')
-          .innerJoinAndSelect('cd.subOrganization', 'org')
+          .innerJoinAndSelect('cd.client', 'org')
           .innerJoinAndSelect('cd.site', 'site')
           .where('cd.organization_id = :organizationId', { organizationId })
-          .andWhere('cd.sub_organization_id = :subOrganizationId', {
-            subOrganizationId,
+          .andWhere('cd.client_id = :clientId', {
+            clientId,
           })
           .andWhere('cd.site_id = :siteId', { siteId })
           .getMany();
@@ -217,26 +214,26 @@ export class SiteService {
     const expense = this.siteExpensesRepository.create(details);
     const inventoryExistingItem = await this.inventoryItemRepository.findOne({
       where: {
-        purchase_id: details.purchase_id,
+        task_id: details.task_id,
         name: expense.name,
       },
-      relations: ['vendor'],
+      relations: ['project'],
     });
     const site = await this.SiteRepository.findOne({
       where: { id: details.site.id },
-      relations: ['organization', 'subOrganization'],
+      relations: ['organization', 'client'],
     });
     const resp = await this.siteExpensesRepository.save(expense);
 
     if (!details.is_general) {
       const inventory = {
         organization_id: site.organization.id,
-        sub_organization_id: site.subOrganization.id,
+        client_id: site.client.id,
         site_id: site.id,
         site_no: site.site_no,
         stock_in: false,
         name: expense.name,
-        vendor: inventoryExistingItem.vendor,
+        project: inventoryExistingItem.project,
         isSiteBased: true,
         qty: expense.quantity,
         unit_price: inventoryExistingItem.unit_price,
@@ -257,14 +254,14 @@ export class SiteService {
 
   async getSiteExpenses(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     site_id: number,
   ) {
     const siteExpenses = await this.siteExpensesRepository.find({
       where: {
         site: { id: site_id },
         organization: { id: organization_id },
-        subOrganization: { id: sub_organization_id },
+        client: { id: client_id },
       },
       order: { id: 'ASC' }, // Include relations if needed
     });
@@ -284,14 +281,14 @@ export class SiteService {
 
   async getSiteOwnerPayments(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     site_id: number,
   ) {
     const siteOwnerPayments = await this.siteOwnerPaymentsRepository.find({
       where: {
         site: { id: site_id },
         organization: { id: organization_id },
-        subOrganization: { id: sub_organization_id },
+        client: { id: client_id },
       },
       order: { id: 'ASC' }, // Include relations if needed
     });
@@ -300,7 +297,7 @@ export class SiteService {
 
   async getSiteContractorsPayments(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     siteId: number,
   ) {
     // console.log('here')
@@ -308,46 +305,23 @@ export class SiteService {
       'sc',
     )
       .select('sc.id', 'id')
-      .addSelect('sc.subject', 'subject')
+      .addSelect('sc.title', 'title')
       .addSelect('sc.contractor', 'contractor')
       .addSelect('SUM(CAST(scp.amount AS INTEGER))', 'amount')
       .leftJoin('site_contractor_payments', 'scp', 'sc.id = scp.contract_id')
       .where('sc.organization_id = :organizationId', { organizationId })
-      .andWhere('sc.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('sc.client_id = :clientId', {
+        clientId,
       })
       .andWhere('sc.site_id = :siteId', { siteId })
       .groupBy('sc.id')
-      .addGroupBy('sc.subject')
+      .addGroupBy('sc.title')
       .addGroupBy('sc.contractor')
       .getRawMany();
 
     return siteContracts;
   }
 
-  async createSiteWorkLog(details: SiteContractorWorkLog) {
-    const worklog = this.siteContractorWorkLogRepository.create(details);
-    const resp = await this.siteContractorWorkLogRepository.save(worklog);
-    return resp;
-  }
-
-  async getSiteWorkLogs(
-    organization_id: number,
-    sub_organization_id: number,
-    site_id: number,
-    contract_id: number,
-  ) {
-    const siteOwnerPayments = await this.siteContractorWorkLogRepository.find({
-      where: {
-        site: { id: site_id },
-        organization: { id: organization_id },
-        subOrganization: { id: sub_organization_id },
-        contract: { id: contract_id },
-      },
-      order: { id: 'ASC' }, // Include relations if needed
-    });
-    return siteOwnerPayments;
-  }
 
   async createSiteContractPayment(details: SiteContractorPayments) {
     const worklog = this.siteContractorPaymentsRepository.create(details);
@@ -357,7 +331,7 @@ export class SiteService {
 
   async getSiteContractPayments(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     site_id: number,
     contract_id: number,
   ) {
@@ -365,7 +339,7 @@ export class SiteService {
       where: {
         site: { id: site_id },
         organization: { id: organization_id },
-        subOrganization: { id: sub_organization_id },
+        client: { id: client_id },
         contract: { id: contract_id },
       },
       order: { id: 'ASC' }, // Include relations if needed

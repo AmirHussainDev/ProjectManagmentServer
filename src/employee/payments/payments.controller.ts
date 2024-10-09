@@ -15,15 +15,15 @@ export class PaymentsController {
 
 
     @UseGuards(AuthGuard('jwt'))
-    @Get('employees/:orgId/:subOrgId')
-    getAllEmployeeDuePayments(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string) {
-        return this.employeeService.getAllEmployeeDuePayments(parseInt(orgId), parseInt(subOrgId));
+    @Get('employees/:orgId/:clientId')
+    getAllEmployeeDuePayments(@Param('orgId') orgId: string, @Param('clientId') clientId: string) {
+        return this.employeeService.getAllEmployeeDuePayments(parseInt(orgId), parseInt(clientId));
     }
 
     @UseGuards(AuthGuard('jwt'))
-    @Get('employee/:orgId/:subOrgId/:employeeId')
-    getAllEmployeePayments(@Param('orgId') orgId: string, @Param('subOrgId') subOrgId: string, @Param('employeeId') employeeId: string) {
-        return this.employeeService.getAllEmployeePayments(parseInt(orgId), parseInt(subOrgId), parseInt(employeeId));
+    @Get('employee/:orgId/:clientId/:employeeId')
+    getAllEmployeePayments(@Param('orgId') orgId: string, @Param('clientId') clientId: string, @Param('employeeId') employeeId: string) {
+        return this.employeeService.getAllEmployeePayments(parseInt(orgId), parseInt(clientId), parseInt(employeeId));
     }
 
 }

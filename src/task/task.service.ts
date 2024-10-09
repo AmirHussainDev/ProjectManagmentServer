@@ -1,120 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import {
   InventoryItem,
-  PurchaseItems,
-  PurchaseRequest,
+  TaskItems,
+  TaskRequest,
   SaleItems,
   SaleRequest,
-} from './inventory-purchase.entity';
+} from './task.entity';
 import { In, Raw, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { VendorItem } from 'src/organization/organization.entity';
+import { ProjectItem } from 'src/organization/organization.entity';
+import { TaskWorkLog } from 'src/site/site.entity';
 
 @Injectable()
-export class InventoryPurchaseService {
+export class TaskService {
   constructor(
-    @InjectRepository(PurchaseRequest)
-    private readonly PurchaseRequestRepository: Repository<PurchaseRequest>,
-    @InjectRepository(PurchaseItems)
-    private readonly PurchaseItemsRepository: Repository<PurchaseItems>,
+    @InjectRepository(TaskRequest)
+    private readonly TaskRequestRepository: Repository<TaskRequest>,
+    @InjectRepository(TaskItems)
+    private readonly TaskItemsRepository: Repository<TaskItems>,
     @InjectRepository(SaleRequest)
     private readonly SaleRequestRepository: Repository<SaleRequest>,
     @InjectRepository(SaleItems)
     private readonly SaleItemsRepository: Repository<SaleItems>,
     @InjectRepository(InventoryItem)
     private readonly inventoryItemRepository: Repository<InventoryItem>,
-    @InjectRepository(VendorItem)
-    private readonly VendorItemRepository: Repository<VendorItem>,
-  ) { }
+    @InjectRepository(ProjectItem)
+    private readonly ProjectItemRepository: Repository<ProjectItem>,
+    @InjectRepository(TaskWorkLog)
+    private readonly taskWorkLogRepository: Repository<TaskWorkLog>,
+  ) {}
 
-  async createPurchaseRequest(itemDetails: {
-    details: PurchaseRequest;
-    products: PurchaseItems[];
-  }): Promise<PurchaseRequest> {
-    const maxPurchaseNo =
-      await this.PurchaseRequestRepository.createQueryBuilder('sr')
-        .select('MAX(sr.purchase_no)', 'maxPurchaseNo')
-        .where('sr.sub_organization_id = :subOrganizationId', {
-          subOrganizationId: itemDetails.details['sub_organization_id'],
-        })
-        .getRawOne();
-    const nextPurchaseNo = maxPurchaseNo.maxPurchaseNo + 1;
-    const purchase = await this.PurchaseRequestRepository.create({
+  async createTaskRequest(itemDetails: {
+    details: TaskRequest;
+    products: TaskItems[];
+  }): Promise<TaskRequest> {
+    const maxTaskNo = await this.TaskRequestRepository.createQueryBuilder('sr')
+      .select('MAX(sr.task_no)', 'maxTaskNo')
+      .where('sr.client_id = :clientId', {
+        clientId: itemDetails.details['client_id'],
+      })
+      .getRawOne();
+    const nextTaskNo = maxTaskNo.maxTaskNo + 1;
+    const task = await this.TaskRequestRepository.create({
       ...itemDetails.details,
-      purchase_no:
-        maxPurchaseNo && maxPurchaseNo.maxPurchaseNo ? nextPurchaseNo : 1,
+      task_no: maxTaskNo && maxTaskNo.maxTaskNo ? nextTaskNo : 1,
     });
-    const resp = await this.PurchaseRequestRepository.save(purchase);
-    itemDetails.products = itemDetails.products.map((item) => ({
-      ...item,
-      purchase: resp,
-    }));
-    this.PurchaseItemsRepository.save(itemDetails.products);
-    const customProducts = itemDetails.products
-      .filter((prod) => prod.isCustom)
-      .map((item) => ({
-        name: item.name.trim(),
-        vendor_id: itemDetails.details.vendor,
-      })) as unknown as VendorItem[];
-    this.VendorItemRepository.save(customProducts);
+    const resp = await this.TaskRequestRepository.save(task);
     return resp;
   }
 
-  async updatePurchaseRequest(itemDetails: {
-    details: PurchaseRequest;
-    products: PurchaseItems[];
-  }): Promise<boolean> {
-    // Update the purchase request details in the PurchaseRequestRepository
-    await this.PurchaseRequestRepository.update(
-      itemDetails.details.id,
-      itemDetails.details,
-    );
+  async updateTaskRequest(itemDetails: TaskRequest): Promise<boolean> {
+    // Update the task request details in the TaskRequestRepository
+    await this.TaskRequestRepository.update(itemDetails.id, itemDetails);
 
-    // Update each purchase item in the PurchaseItemsRepository
-    for (const product of itemDetails.products) {
-      await this.PurchaseItemsRepository.update(product.id, product);
-    }
-
-    if (
-      (itemDetails.details.state == 4 &&
-        itemDetails.details.payment_history.length &&
-        itemDetails.details.payment_history.length === 1) ||
-      (itemDetails.details.state == 2 &&
-        itemDetails.details.payment_history.length &&
-        itemDetails.details.payment_history.length === 1)
-    ) {
-      const po = await this.PurchaseRequestRepository.findOne({
-        where: {
-          id: itemDetails.details.id,
-        },
-        relations: ['created_by', 'organization', 'subOrganization', 'vendor'],
-      });
-      const products = await this.PurchaseItemsRepository.find({
-        where: {
-          purchase: { id: po.id },
-        },
-      });
-      for (const product of products) {
-        const inventory = {
-          organization_id: po.organization.id,
-          sub_organization_id: po.subOrganization.id,
-          purchase_id: po.id,
-          purchase_no: po.purchase_no,
-          stock_in: true,
-          name: product.name.trim(),
-          vendor: po.vendor,
-          isSiteBased: po.isSiteBased,
-          site_ids: po.site_ids,
-          qty: product.qty,
-          unit_price: product.unit_price,
-          description: po.subject,
-          total: product.total,
-          date_created: new Date(),
-        };
-        const inventoryItem = this.inventoryItemRepository.create(inventory);
-        await this.inventoryItemRepository.save(inventoryItem);
-      }
-    }
     // Return true indicating the update was successful
     return true;
   }
@@ -136,10 +74,9 @@ export class InventoryPurchaseService {
         'sr',
       )
         .select('MAX(sr.sale_no)', 'sale_no')
-        .where('sr.sub_organization_id = :subOrganizationId', {
-          subOrganizationId:
-            itemDetails.details['subOrganization'] ||
-            itemDetails.details['sub_organization_id'],
+        .where('sr.client_id = :clientId', {
+          clientId:
+            itemDetails.details['client'] || itemDetails.details['client_id'],
         })
         .getRawOne();
       const nextSaleNo = maxSaleNo.sale_no + 1;
@@ -185,22 +122,22 @@ export class InventoryPurchaseService {
           where: {
             id: itemDetails.details.id,
           },
-          relations: ['created_by', 'organization', 'subOrganization'],
+          relations: ['created_by', 'organization', 'client'],
         });
         const products = await this.SaleItemsRepository.find({
           where: { id: In(itemDetails.products.map((pr) => pr.id)) },
-          relations: ['vendor'],
+          relations: ['project'],
         });
         for (const product of products) {
           if (!product.isCustom) {
             const inventory = {
               organization_id: so.organization.id,
-              sub_organization_id: so.subOrganization.id,
+              client_id: so.client.id,
               sale_id: so.id,
               sale_no: so.sale_no,
               stock_in: false,
               name: product.name,
-              vendor: product.vendor,
+              project: product.project,
               qty:
                 product.qty -
                 product.return_details.reduce(
@@ -208,7 +145,7 @@ export class InventoryPurchaseService {
                   0,
                 ),
               unit_price: product.unit_price,
-              description: so.subject,
+              description: so.title,
               total:
                 product.total - this.sumReturnAmount(product.return_details),
               date_created: new Date(),
@@ -222,7 +159,7 @@ export class InventoryPurchaseService {
       if (!itemDetails.details.state) {
         const products = await this.SaleItemsRepository.find({
           where: { id: In(itemDetails.products.map((pr) => pr.id)) },
-          relations: ['vendor'],
+          relations: ['project'],
         });
         products.forEach(async (product) => {
           // Initialize total returned quantity
@@ -266,61 +203,51 @@ export class InventoryPurchaseService {
     return totalReturnAmount;
   }
 
-  async getPurchaseRequestsByState(
+  async getTaskRequestsByState(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     state: number,
   ): Promise<any[]> {
     const query = `
-      SELECT * FROM get_purchase_requests($1, $2, $3)
+      SELECT * FROM get_task_requests($1, $2, $3)
     `;
-    return await this.PurchaseRequestRepository.query(query, [
+    return await this.TaskRequestRepository.query(query, [
       state,
       organizationId,
-      subOrganizationId,
+      clientId,
     ]);
   }
 
-  async getPurchaseRequests(
+  async getTaskRequests(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     state: string[] = [],
   ): Promise<any[]> {
-    const query = this.PurchaseRequestRepository.createQueryBuilder('pr')
+    const query = this.TaskRequestRepository.createQueryBuilder('pr')
       .select('pr.id', 'id')
       .addSelect('pr.state', 'state')
-      .addSelect('pr.purchase_no', 'purchase_no')
+      .addSelect('pr.task_no', 'task_no')
+      .addSelect('pr.type', 'type')
       .addSelect('pr.organization_id', 'organization_id')
-      .addSelect('pr.sub_organization_id', 'sub_organization_id')
+      .addSelect('pr.client_id', 'client_id')
       .addSelect('pr.created_by', 'created_by')
       .addSelect('u.name', 'created_by_name')
-      .addSelect('so.name', 'sub_organization_name')
+      .addSelect('u2.name', 'assignee_name')
+      .addSelect('so.name', 'client_name')
       .addSelect('pr.date_created', 'date_created')
-      .addSelect('pr.total', 'total')
-      .addSelect('pr.notes', 'notes')
-      .addSelect('pr.additional_cost', 'additional_cost')
-      .addSelect('pr.balance_to_be_paid_on', 'balance_to_be_paid_on')
-      .addSelect('pr.date_confirmation_on', 'date_confirmation_on')
-      .addSelect('pr.item_cost', 'item_cost')
-      .addSelect('pr.shipment_charges', 'shipment_charges')
-      .addSelect('pr.amount_paid', 'amount_paid')
-      .addSelect('pr.balance', 'balance')
-      .addSelect('v.filename', 'filename')
-      .addSelect('v.name', 'vendor_name')
-      .addSelect('pr.subject', 'subject')
-      .addSelect('pr.items_discount_total', 'items_discount_total')
-      .addSelect('pr.overall_discount_total', 'overall_discount_total')
-      .addSelect('pr.overall_discount', 'overall_discount')
-      .addSelect('pr.invoice_date', 'invoice_date')
+      .addSelect('pr.description', 'description')
+      .addSelect('pr.title', 'title')
       .addSelect('pr.due_date', 'due_date')
-      .addSelect('pr.sales_person', 'sales_person')
+      .addSelect('pr.start_date', 'start_date')
+      .addSelect('pr.severity', 'severity')
+      .addSelect('pr.assignee', 'assignee')
       .addSelect('pr.terms', 'terms')
       .leftJoin('user', 'u', 'pr.created_by = u.id')
-      .leftJoin('vendor', 'v', 'pr.vendor_id = v.id')
-      .leftJoin('sub_organization', 'so', 'pr.sub_organization_id = so.id')
+      .leftJoin('client', 'so', 'pr.client_id = so.id')
+      .leftJoin('user', 'u2', 'pr.assignee = u2.id')
       .where('pr.organization_id = :organizationId', { organizationId })
-      .andWhere('pr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('pr.client_id = :clientId', {
+        clientId,
       })
       .orderBy({ date_created: 'DESC' });
     if (state.length > 1) {
@@ -333,7 +260,7 @@ export class InventoryPurchaseService {
 
   async getSalesRequestsByCustomer(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     customer: number,
   ): Promise<any[]> {
     const query = this.SaleRequestRepository.createQueryBuilder('sr')
@@ -341,13 +268,13 @@ export class InventoryPurchaseService {
       .addSelect('sr.state', 'state')
       .addSelect('sr.sale_no', 'sale_no')
       .addSelect('sr.organization_id', 'organization_id')
-      .addSelect('sr.sub_organization_id', 'sub_organization_id')
+      .addSelect('sr.client_id', 'client_id')
       .addSelect('sr.created_by', 'created_by')
       .addSelect('u.name', 'created_by_name')
-      .addSelect('so.name', 'sub_organization_name')
+      .addSelect('so.name', 'client_name')
       .addSelect('sr.date_created', 'date_created')
       .addSelect('sr.total', 'total')
-      .addSelect('sr.notes', 'notes')
+      .addSelect('sr.description', 'description')
       .addSelect('sr.additional_cost', 'additional_cost')
       .addSelect('sr.balance_to_be_paid_on', 'balance_to_be_paid_on')
       .addSelect('sr.date_confirmation_on', 'date_confirmation_on')
@@ -355,7 +282,7 @@ export class InventoryPurchaseService {
       .addSelect('sr.shipment_charges', 'shipment_charges')
       .addSelect('sr.amount_paid', 'amount_paid')
       .addSelect('sr.balance', 'balance')
-      .addSelect('sr.subject', 'subject')
+      .addSelect('sr.title', 'title')
       .addSelect('sr.items_discount_total', 'items_discount_total')
       .addSelect('sr.overall_discount_total', 'overall_discount_total')
       .addSelect('sr.overall_discount', 'overall_discount')
@@ -365,10 +292,10 @@ export class InventoryPurchaseService {
       .addSelect('sr.terms', 'terms')
       .leftJoin('user', 'u', 'sr.created_by = u.id')
       .leftJoin('customer', 'c', 'sr.customer_id = c.id')
-      .leftJoin('sub_organization', 'so', 'sr.sub_organization_id = so.id')
+      .leftJoin('client', 'so', 'sr.client_id = so.id')
       .where('sr.organization_id = :organizationId', { organizationId })
-      .andWhere('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('sr.client_id = :clientId', {
+        clientId,
       })
       .andWhere('sr.customer_id = :customer', {
         customer,
@@ -376,12 +303,12 @@ export class InventoryPurchaseService {
       .orderBy({ date_created: 'DESC' });
     // console.log(query)
     return query.getRawMany();
-    // return await this.PurchaseRequestRepository.query(query, [organizationId, subOrganizationId]);
+    // return await this.TaskRequestRepository.query(query, [organizationId, clientId]);
   }
 
   async getSalesRequests(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     state: string[] = [],
   ): Promise<any[]> {
     const query = this.SaleRequestRepository.createQueryBuilder('sr')
@@ -389,13 +316,13 @@ export class InventoryPurchaseService {
       .addSelect('sr.state', 'state')
       .addSelect('sr.sale_no', 'sale_no')
       .addSelect('sr.organization_id', 'organization_id')
-      .addSelect('sr.sub_organization_id', 'sub_organization_id')
+      .addSelect('sr.client_id', 'client_id')
       .addSelect('sr.created_by', 'created_by')
       .addSelect('u.name', 'created_by_name')
-      .addSelect('so.name', 'sub_organization_name')
+      .addSelect('so.name', 'client_name')
       .addSelect('sr.date_created', 'date_created')
       .addSelect('sr.total', 'total')
-      .addSelect('sr.notes', 'notes')
+      .addSelect('sr.description', 'description')
       .addSelect('sr.additional_cost', 'additional_cost')
       .addSelect('sr.balance_to_be_paid_on', 'balance_to_be_paid_on')
       .addSelect('sr.date_confirmation_on', 'date_confirmation_on')
@@ -403,7 +330,7 @@ export class InventoryPurchaseService {
       .addSelect('sr.shipment_charges', 'shipment_charges')
       .addSelect('sr.amount_paid', 'amount_paid')
       .addSelect('sr.balance', 'balance')
-      .addSelect('sr.subject', 'subject')
+      .addSelect('sr.title', 'title')
       .addSelect('sr.items_discount_total', 'items_discount_total')
       .addSelect('sr.overall_discount_total', 'overall_discount_total')
       .addSelect('sr.overall_discount', 'overall_discount')
@@ -413,10 +340,10 @@ export class InventoryPurchaseService {
       .addSelect('sr.terms', 'terms')
       .leftJoin('user', 'u', 'sr.created_by = u.id')
       .leftJoin('customer', 'c', 'sr.customer_id = c.id')
-      .leftJoin('sub_organization', 'so', 'sr.sub_organization_id = so.id')
+      .leftJoin('client', 'so', 'sr.client_id = so.id')
       .where('sr.organization_id = :organizationId', { organizationId })
-      .andWhere('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('sr.client_id = :clientId', {
+        clientId,
       })
       .orderBy({ date_created: 'DESC' });
     if (Array.isArray(state) && state.length) {
@@ -426,65 +353,48 @@ export class InventoryPurchaseService {
     }
     // console.log(query)
     return query.getRawMany();
-    // return await this.PurchaseRequestRepository.query(query, [organizationId, subOrganizationId]);
+    // return await this.TaskRequestRepository.query(query, [organizationId, clientId]);
   }
 
-  async getPurchaseRequest(
+  async getTaskRequest(
     organizationId: number,
-    subOrganizationId: number,
-    purchaseId: number,
+    clientId: number,
+    taskId: number,
   ): Promise<any> {
-    const result = await this.PurchaseRequestRepository.createQueryBuilder('pr')
-      .leftJoinAndSelect('pr.vendor', 'v')
+    const result = await this.TaskRequestRepository.createQueryBuilder('pr')
       .leftJoinAndSelect('pr.created_by', 'u')
-      .leftJoinAndSelect('pr.subOrganization', 'so')
+      .leftJoinAndSelect('pr.client', 'so')
       .select([
         'pr.id',
         'pr.state',
-        'pr.isSiteBased',
-        'pr.purchase_no',
-        'pr.site_ids',
+        'pr.task_no',
+        'pr.type',
         'pr.organization_id',
-        'pr.sub_organization_id',
-        'pr.vendor_id',
-        'v.name',
-        'v.filename',
-        'v.id',
+        'pr.client_id',
         'pr.created_by',
-        'pr.payment_history',
         'u.name',
         'u.id',
         'so.name',
         'pr.date_created',
-        'pr.total',
-        'pr.notes',
-        'pr.additional_cost',
-        'pr.balance_to_be_paid_on',
-        'pr.date_confirmation_on',
-        'pr.item_cost',
-        'pr.shipment_charges',
-        'pr.amount_paid',
-        'pr.balance',
-        'pr.subject',
-        'pr.items_discount_total',
-        'pr.overall_discount_total',
-        'pr.overall_discount',
-        'pr.invoice_date',
+        'pr.description',
+        'pr.title',
         'pr.due_date',
-        'pr.sales_person',
+        'pr.start_date',
+        'pr.severity',
+        'pr.assignee',
         'pr.attachment',
         'pr.terms',
       ])
-      .where('pr.purchase_no = :purchaseId', { purchaseId })
+      .where('pr.task_no = :taskId', { taskId })
       .andWhere('pr.organization_id = :organizationId', { organizationId })
-      .andWhere('pr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('pr.client_id = :clientId', {
+        clientId,
       })
       .getOne();
 
     if (result && result.id) {
-      const items = await this.PurchaseItemsRepository.findBy({
-        purchase: { id: result.id },
+      const items = await this.TaskItemsRepository.findBy({
+        task: { id: result.id },
       });
 
       result['items'] = items;
@@ -494,31 +404,31 @@ export class InventoryPurchaseService {
 
   async getSaleRequests(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
   ): Promise<any[]> {
     const query = `
-      SELECT * FROM get_all_purchase_requests($1, $2)
+      SELECT * FROM get_all_task_requests($1, $2)
     `;
-    return await this.PurchaseRequestRepository.query(query, [
+    return await this.TaskRequestRepository.query(query, [
       organizationId,
-      subOrganizationId,
+      clientId,
     ]);
   }
 
   async getSaleRequest(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
     saleId: number,
   ): Promise<any> {
     const result = await this.SaleRequestRepository.createQueryBuilder('sr')
       .leftJoinAndSelect('sr.created_by', 'u')
-      .leftJoinAndSelect('sr.subOrganization', 'so')
+      .leftJoinAndSelect('sr.client', 'so')
       .leftJoinAndSelect('sr.customer', 'c')
       .select([
         'sr.id',
         'sr.state',
         'sr.organization_id',
-        'sr.sub_organization_id',
+        'sr.client_id',
         'sr.created_by',
         'sr.sale_no',
         'c.name',
@@ -528,7 +438,7 @@ export class InventoryPurchaseService {
         'so.name',
         'sr.date_created',
         'sr.total',
-        'sr.notes',
+        'sr.description',
         'sr.additional_cost',
         'sr.balance_to_be_paid_on',
         'sr.date_confirmation_on',
@@ -537,7 +447,7 @@ export class InventoryPurchaseService {
         'sr.amount_paid',
         'sr.balance',
         'sr.payment_history',
-        'sr.subject',
+        'sr.title',
         'sr.items_discount_total',
         'sr.overall_discount_total',
         'sr.overall_discount',
@@ -548,8 +458,8 @@ export class InventoryPurchaseService {
       ])
       .where('sr.sale_no = :saleId', { saleId })
       .andWhere('sr.organization_id = :organizationId', { organizationId })
-      .andWhere('sr.sub_organization_id = :subOrganizationId', {
-        subOrganizationId,
+      .andWhere('sr.client_id = :clientId', {
+        clientId,
       })
       .getOne();
 
@@ -570,21 +480,18 @@ export class InventoryPurchaseService {
     return await this.inventoryItemRepository.save(inventoryItem);
   }
 
-  async getInventory(
-    organizationId: number,
-    subOrganizationId: number,
-  ): Promise<any[]> {
+  async getInventory(organizationId: number, clientId: number): Promise<any[]> {
     const inventoryItems: any = await this.inventoryItemRepository.find({
       where: {
         organization_id: organizationId,
-        sub_organization_id: subOrganizationId,
+        client_id: clientId,
       },
-      relations: ['vendor'], // Assuming you have relations defined in your entity
+      relations: ['project'], // Assuming you have relations defined in your entity
     });
 
-    // Group by item name and vendor name
+    // Group by item name and project name
     const groupedData = inventoryItems.reduce((acc, item) => {
-      const key = `${item.name}-${item.vendor.name}`;
+      const key = `${item.name}-${item.project.name}`;
       if (!acc[key]) {
         acc[key] = [];
       }
@@ -640,7 +547,7 @@ export class InventoryPurchaseService {
       return {
         ...items[0],
         item_name: items[0].name,
-        vendor_name: items[0].vendor.name,
+        project_name: items[0].project.name,
         latest_unit_price: latestStockInItem.unit_price,
         qty: totalRemainingQty,
         avg_unit_price: averageUnitPrice,
@@ -650,35 +557,15 @@ export class InventoryPurchaseService {
     return result;
   }
 
-  async getInventoryStats(
+  async getProjectStats(
     organizationId: number,
-    subOrganizationId: number,
+    clientId: number,
   ): Promise<any> {
-    const inventoryData = await this.getInventory(
-      organizationId,
-      subOrganizationId,
-    );
-
-    let currentStock = 0;
-    let maxSales = 0;
-    let productsSold = 0;
-    let currentStockValue = 0;
-
-    inventoryData.forEach((item) => {
-      const totalValue = item.qty * parseFloat(item.avg_unit_price);
-
-      currentStock += item.qty;
-      currentStockValue += totalValue;
-
-      maxSales += parseFloat(item.latest_unit_price) * item.qty;
-      productsSold += item.qty;
-    });
-
+    const worklogs = await this.getWorkLogs(organizationId, clientId);
+    const tasks = await this.getTaskRequests(organizationId, clientId);
     return {
-      currentStock,
-      maxSales,
-      productsSold,
-      currentStockValue,
+      worklogs,
+      tasks,
     };
   }
 
@@ -697,30 +584,86 @@ export class InventoryPurchaseService {
 
   async getInventoryItemDetails(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     name: string,
   ): Promise<InventoryItem[]> {
     return name
       ? this.inventoryItemRepository.findBy({
-        organization_id,
-        sub_organization_id,
-        name,
-      })
+          organization_id,
+          client_id,
+          name,
+        })
       : this.inventoryItemRepository.findBy({
-        organization_id,
-        sub_organization_id,
-      });
+          organization_id,
+          client_id,
+        });
   }
 
   async getInventoryBySite(
     organization_id: number,
-    sub_organization_id: number,
+    client_id: number,
     siteId: number,
   ): Promise<InventoryItem[]> {
     return this.inventoryItemRepository.findBy({
       organization_id,
-      sub_organization_id,
+      client_id,
       site_ids: Raw((alias) => `CAST(${alias} AS text) ILIKE '%${siteId}%'`),
     });
+  }
+
+  async getTaskWorkLogs(
+    organization_id: number,
+    client_id: number,
+    task_id: number,
+  ) {
+    const siteOwnerPayments = await this.taskWorkLogRepository
+      .createQueryBuilder('taskWorkLog')
+      .leftJoinAndSelect('taskWorkLog.created_by', 'user') // Join the 'created_by' user
+      .select([
+        'taskWorkLog.id', // Select fields from TaskWorkLog
+        'taskWorkLog.work_from',
+        'taskWorkLog.no_of_hours',
+        'taskWorkLog.date_created',
+        'taskWorkLog.note',
+        'taskWorkLog.paid',
+        'user.id', // Select specific properties from User
+        'user.name', // Example: selecting 'name' from User
+      ])
+      .where('taskWorkLog.task = :taskId', { taskId: task_id })
+      .andWhere('taskWorkLog.organization = :organizationId', {
+        organizationId: organization_id,
+      })
+      .andWhere('taskWorkLog.client = :clientId', { clientId: client_id })
+      .orderBy('taskWorkLog.id', 'ASC')
+      .getMany();
+    return siteOwnerPayments;
+  }
+
+  async getWorkLogs(organization_id: number, client_id: number) {
+    const siteOwnerPayments = await this.taskWorkLogRepository
+      .createQueryBuilder('taskWorkLog')
+      .leftJoinAndSelect('taskWorkLog.created_by', 'user') // Join the 'created_by' user
+      .select([
+        'taskWorkLog.id', // Select fields from TaskWorkLog
+        'taskWorkLog.work_from',
+        'taskWorkLog.no_of_hours',
+        'taskWorkLog.date_created',
+        'taskWorkLog.paid',
+        'taskWorkLog.note',
+        'user.id', // Select specific properties from User
+        'user.name', // Example: selecting 'name' from User
+      ])
+      .where('taskWorkLog.client = :clientId', { clientId: client_id })
+      .andWhere('taskWorkLog.organization = :organizationId', {
+        organizationId: organization_id,
+      })
+      .orderBy('taskWorkLog.id', 'ASC')
+      .getMany();
+    return siteOwnerPayments;
+  }
+  async createTaskWorkLog(details: TaskWorkLog) {
+    const worklog = this.taskWorkLogRepository.create(details);
+    const resp = await this.taskWorkLogRepository.save(worklog);
+    return resp;
   }
 }

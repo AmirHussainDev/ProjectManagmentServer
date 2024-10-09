@@ -1,6 +1,6 @@
 import {
   Organization,
-  SubOrganization,
+  Client,
 } from 'src/organization/organization.entity';
 import { RolePermissions } from 'src/role-permissions/role-permissions.entity';
 import {
@@ -25,9 +25,9 @@ export class User {
   organization: Organization;
 
   @Column()
-  sub_organization_id: number;
-  @ManyToOne(() => SubOrganization)
-  sub_organization: SubOrganization;
+  client_id: number;
+  @ManyToOne(() => Client)
+  client: Client;
 
   @Column('text', { nullable: true })
   password: string;

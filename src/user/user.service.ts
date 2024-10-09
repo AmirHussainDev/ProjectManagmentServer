@@ -24,11 +24,10 @@ export class UserService {
         // position: 'employee',
         employee: user.id,
         organization: user.organization_id,
-        subOrganization: user.sub_organization_id,
-        supervisor: user.reports_to,
+        client: user.client_id,
         salary: 0,
         overtime: false,
-        isSalaryHourly: false,
+        isHourlyRateHourly: false,
         workingHours: 8,
         siginout_required: false,
         details: '',
@@ -61,7 +60,7 @@ export class UserService {
       },
     );
 
-    if (previousUser.sub_organization_id !== userObj.sub_organization_id) {
+    if (previousUser.client_id !== userObj.client_id) {
       if (userObj.deleted) {
         this.employeeRepository.update(
           { employee: userObj.id },
@@ -73,7 +72,7 @@ export class UserService {
         this.employeeRepository.update(
           { employee: userObj.id },
           {
-            subOrganization: userObj.sub_organization_id,
+            client: userObj.client_id,
           },
         );
       }
@@ -106,14 +105,14 @@ export class UserService {
           'usr.is_admin AS is_admin',
           'usr.password AS password',
           'usr.deleted AS deleted',
-          'usr.sub_organization_id AS sub_organization_id',
+          'usr.client_id AS client_id',
           'usr.contact_no AS contact_no',
           'usr.address AS address',
           'usr.reports_to AS reports_to',
           'rp.role_name AS role_name',
           'rp.role_permissions AS role_permissions',
         ])
-        .innerJoin('role_permissions', 'rp', 'rp.id = usr.role_id')
+        .leftJoin('role_permissions', 'rp', 'rp.id = usr.role_id')
         .where('usr.organization_id = :organizationId', {
           organizationId: organization_id,
         })
