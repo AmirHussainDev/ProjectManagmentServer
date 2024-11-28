@@ -49,9 +49,9 @@ export class User {
 
   @Column('boolean', { nullable: true })
   is_admin: boolean;
-  
+
   @Column('boolean', { nullable: true })
-  is_contractor: boolean;
+  is_client: boolean;
 
   @Column('boolean', { nullable: true })
   is_employee: boolean;

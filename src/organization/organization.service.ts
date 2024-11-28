@@ -22,7 +22,7 @@ export class OrganizationService {
     private readonly ProjectRepository: Repository<Project>,
     @InjectRepository(ProjectItem)
     private readonly ProjectItemRepository: Repository<ProjectItem>,
-  ) {}
+  ) { }
 
   async createOrganization(
     name: string,
@@ -58,8 +58,11 @@ export class OrganizationService {
   }
 
   async getAllClients(organization_id: string): Promise<Client[]> {
-    return this.ClientRepository.findBy({
-      organization_id: parseInt(organization_id),
+    return this.ClientRepository.find({
+      where: {
+        organization_id: parseInt(organization_id),
+      },
+      relations: ['owner'],
     });
   }
 

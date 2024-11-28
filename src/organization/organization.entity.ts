@@ -1,3 +1,4 @@
+import { User } from 'src/user/user.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -29,6 +30,10 @@ export class Client {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'owner_id' })
+  owner: User;
+
   @Column()
   name: string;
 
@@ -40,6 +45,9 @@ export class Client {
 
   @Column({ nullable: true })
   projectDescription: string;
+
+  @Column({ nullable: true })
+  currency: string;
 
   @Column({
     nullable: true,

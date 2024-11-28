@@ -42,9 +42,12 @@ import {
   Worklog,
   Employee,
   EmployeePayments,
+  ClientPayments,
 } from './employee/employee.entity';
 import { Customer } from './customer/customer.entity';
 import { CustomerModule } from './customer/customer.module';
+import { Currency } from './currency/currency.entity';
+import { CurrencyModule } from './currency/currency.module';
 @Global()
 @Module({
   imports: [
@@ -77,7 +80,9 @@ import { CustomerModule } from './customer/customer.module';
         Employee,
         Worklog,
         EmployeePayments,
+        ClientPayments,
         Customer,
+        Currency,
       ],
       synchronize: true,
     }),
@@ -94,6 +99,7 @@ import { CustomerModule } from './customer/customer.module';
     InventoryTaskModule,
     EmployeeModule,
     CustomerModule,
+    CurrencyModule,
   ],
   controllers: [AppController, SiteController],
   providers: [AppService, UserService, AuthService, SiteService],

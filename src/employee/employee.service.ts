@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { Worklog, Employee, EmployeePayments } from './employee.entity';
+import {
+  Worklog,
+  Employee,
+  EmployeePayments,
+  ClientPayments,
+} from './employee.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { User } from 'src/user/user.entity';
 import { TaskWorkLog } from 'src/site/site.entity';
+import { Client } from 'src/organization/organization.entity';
 
 @Injectable()
 export class EmployeeService {
@@ -16,6 +22,10 @@ export class EmployeeService {
     private readonly worklogRepository: Repository<Worklog>,
     @InjectRepository(EmployeePayments)
     private readonly employeePaymentsRepository: Repository<EmployeePayments>,
+    @InjectRepository(ClientPayments)
+    private readonly clientPaymentsRepository: Repository<ClientPayments>,
+    @InjectRepository(Client)
+    private readonly clientRepository: Repository<Client>,
     @InjectRepository(TaskWorkLog)
     private readonly taskWorkLogRepository: Repository<TaskWorkLog>,
   ) { }
@@ -202,6 +212,198 @@ export class EmployeeService {
     return this.employeePaymentsRepository.save(Employee) as any;
   }
 
+  async createClientPayments(userObj: any): Promise<ClientPayments> {
+    const clientPayment = this.clientPaymentsRepository.create({ ...userObj });
+    return this.clientPaymentsRepository.save(clientPayment) as any;
+  }
+
+  async getClientExpenseSummary(
+    client_id: number,
+  ): Promise<{ expense: string }> {
+    let totalExpense = 0;
+
+    // Fetch fixed-rate employee payments filtered by client_id
+    const employeePayments = await this.employeePaymentsRepository.find({
+      where: { client: { id: client_id } },
+    });
+
+    // Sum up fixed-rate employee payments
+    totalExpense += employeePayments.reduce(
+      (sum, payment) => sum + parseFloat(payment.amount.toString()),
+      0,
+    );
+
+    // Fetch employees associated with the client
+    const employees = await this.employeeRepository.find({
+      where: { client: { id: client_id } },
+      relations: ['employee'],
+    });
+
+    // Calculate expenses for hourly-rated employees
+    for (const employee of employees) {
+      if (employee.isHourlyRateHourly) {
+        const worklogs = await this.getcurrentEmployeeWorkLog(
+          employee.employee.id,
+          client_id,
+        );
+        const totalHours = worklogs.reduce(
+          (sum, log) => sum + log.no_of_hours,
+          0,
+        );
+        totalExpense += totalHours * employee.salary; // Hourly rate multiplied by total hours worked
+      }
+    }
+
+    // Return the total expense with two decimal precision
+    return {
+      expense: totalExpense.toFixed(2),
+    };
+  }
+
+  async getClientExpenseGroupedByClientId(): Promise<
+    {
+      id: number;
+      name: string;
+      currency: string;
+      budget: string;
+      expense: string;
+    }[]
+  > {
+    // Fetch all clients
+    const allClients = await this.clientRepository.find();
+
+    // Fetch all employee payments with related client details
+    const employeePayments = await this.employeePaymentsRepository.find({
+      relations: ['client', 'employee'], // Include the `employee` relation
+    });
+
+    // Fetch all employees to identify hourly-rated employees
+    const employees = await this.employeeRepository.find({
+      relations: ['client', 'employee'],
+    });
+
+    // Map hourly-rated employees by client
+    const hourlyExpensesByClient = {};
+
+    for (const employee of employees) {
+      if (employee.isHourlyRateHourly) {
+        const worklogs = await this.getcurrentEmployeeWorkLog(
+          employee.employee.id,
+          employee.client.id,
+        );
+        const totalHours = worklogs.reduce(
+          (sum, log) => sum + log.no_of_hours,
+          0,
+        );
+        const totalHourlyExpense = totalHours * employee.salary; // Calculate expense
+
+        const clientId = employee.client.id;
+        if (!hourlyExpensesByClient[clientId]) {
+          hourlyExpensesByClient[clientId] = 0;
+        }
+        hourlyExpensesByClient[clientId] += totalHourlyExpense;
+      }
+    }
+
+    // Group fixed-rate employee payments by client and calculate total expense
+    const expenseByClient = employeePayments.reduce((acc, payment) => {
+      const client = payment.client;
+      const clientId = client.id;
+
+      if (!acc[clientId]) {
+        acc[clientId] = {
+          id: clientId,
+          name: client.name,
+          budget: client.projectBudget || '0',
+          currency: client.currency || 'USD',
+          expense: 0,
+        };
+      }
+
+      acc[clientId].expense += parseFloat(payment.amount.toString());
+      return acc;
+    }, {});
+
+    // Combine hourly-rated and fixed-rate expenses
+    for (const clientId in hourlyExpensesByClient) {
+      if (!expenseByClient[clientId]) {
+        const client = allClients.find((c) => c.id === parseInt(clientId));
+        if (client) {
+          expenseByClient[clientId] = {
+            id: client.id,
+            name: client.name,
+            budget: client.projectBudget || '0',
+            currency: client.currency || 'USD',
+            expense: 0,
+          };
+        }
+      }
+      if (expenseByClient[clientId]) {
+        expenseByClient[clientId].expense += hourlyExpensesByClient[clientId];
+      }
+    }
+
+    // Combine all clients with their respective expenses
+    const result = allClients.map((client) => {
+      const clientExpense = expenseByClient[client.id] || {
+        id: client.id,
+        name: client.name,
+        budget: client.projectBudget || '0',
+        currency: client.currency || 'USD',
+        expense: 0,
+      };
+
+      return {
+        id: clientExpense.id,
+        name: clientExpense.name,
+        currency: clientExpense.currency,
+        budget: clientExpense.budget,
+        expense: clientExpense.expense.toFixed(2), // Precision of two decimal points
+      };
+    });
+
+    return result;
+  }
+
+  async getClientBudgetDetail(client_id: number): Promise<any> {
+    // Fetch all client payments
+    const clientPayments = await this.clientPaymentsRepository.find({
+      order: { recieving_date: 'DESC' },
+      where: { client: { id: client_id } }, // Assuming the `client` field is a relation
+    });
+
+    if (!clientPayments.length) {
+      return {
+        summary: {
+          recieved: '0',
+          recieving_date: null,
+        },
+        details: [],
+      };
+    }
+
+    // Calculate the summary
+    const totalRecieved = clientPayments.reduce(
+      (sum, payment) => sum + parseFloat(payment.amount.toString()),
+      0,
+    );
+    const mostRecentDate = clientPayments[0].recieving_date;
+
+    // Prepare the details
+    const details = clientPayments.map((payment) => ({
+      recieved: payment.amount.toString(),
+      recieving_date: payment.recieving_date,
+    }));
+
+    return {
+      summary: {
+        recieved: totalRecieved.toFixed(2), // Keeping precision of two decimal points
+        recieving_date: mostRecentDate,
+      },
+      details,
+    };
+  }
+
   async getAllEmployeePayments(
     organizationId: number,
     clientId: number,
@@ -232,26 +434,55 @@ export class EmployeeService {
         order: { date_created: 'DESC' },
       });
 
-      for (let i = 0; i < employees.length; i++) {
-        const employeeId = employees[i].employee.id;
-        const worklog = await this.getcurrentEmployeeWorkLog(
-          employeeId,
-          clientId,
-        );
-        // Calculate total worked hours and remaining unpaid hours
-        const totalWorkedHours = worklog.reduce(
-          (total, log) => total + log.no_of_hours,
-          0,
-        );
+      for (const employee of employees) {
+        const employeeId = employee.employee.id;
 
-        const remainingUnpaidHours = worklog
-          .filter((log) => !log.paid) // Filter unpaid worklogs
-          .reduce((total, log) => total + log.no_of_hours, 0);
-        const paymentObject = {
-          totalAmount: totalWorkedHours * employees[i].salary,
-          balance: remainingUnpaidHours * employees[i].salary,
-        };
-        paymentArray.push({ employee: employees[i], worklog, paymentObject });
+        if (employee.isHourlyRateHourly) {
+          // Handle hourly rate employees
+          const worklog = await this.getcurrentEmployeeWorkLog(
+            employeeId,
+            clientId,
+          );
+
+          const totalWorkedHours = worklog.reduce(
+            (total, log) => total + log.no_of_hours,
+            0,
+          );
+
+          const remainingUnpaidHours = worklog
+            .filter((log) => !log.paid) // Filter unpaid worklogs
+            .reduce((total, log) => total + log.no_of_hours, 0);
+
+          const paymentObject = {
+            totalAmount: totalWorkedHours * employee.salary,
+            totalPaid:
+              totalWorkedHours * employee.salary -
+              remainingUnpaidHours * employee.salary,
+            balance: remainingUnpaidHours * employee.salary,
+          };
+
+          paymentArray.push({ employee, worklog, paymentObject });
+        } else {
+          // Handle non-hourly rate employees
+          const payments = await this.getAllEmployeePayments(
+            organizationId,
+            clientId,
+            employee.id,
+          );
+
+          const totalPaid = payments.reduce(
+            (total, payment) => total + parseFloat(payment.amount.toString()),
+            0,
+          );
+
+          const paymentObject = {
+            totalAmount: employee.salary, // Fixed salary
+            totalPaid: totalPaid,
+            balance: employee.salary - totalPaid, // Remaining balance
+          };
+
+          paymentArray.push({ employee, payments, paymentObject });
+        }
       }
     } catch (err) {
       console.error(err);

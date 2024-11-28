@@ -161,3 +161,40 @@ export class EmployeePayments {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date_created: Date;
 }
+
+@Entity()
+export class ClientPayments {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0.0,
+    nullable: true,
+  })
+  amount: number;
+
+
+  @Column({ nullable: true })
+  note: string;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  recieving_date: Date;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by_id' })
+  created_by: User;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  date_created: Date;
+}
